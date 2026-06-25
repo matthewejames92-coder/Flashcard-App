@@ -239,6 +239,15 @@
             background: #C93A2E;
         }
 
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
         /* Flashcard */
         .flashcard-container {
             perspective: 1000px;
@@ -247,7 +256,8 @@
 
         .flashcard {
             width: 100%;
-            height: 400px;
+            min-height: 250px;
+            max-height: 400px;
             position: relative;
             transform-style: preserve-3d;
             transition: transform 0.6s;
@@ -261,12 +271,12 @@
         .card-face {
             position: absolute;
             width: 100%;
-            height: 100%;
+            min-height: 250px;
             backface-visibility: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 40px;
+            padding: 30px 40px;
             border-radius: 16px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         }
@@ -283,9 +293,10 @@
         }
 
         .card-text {
-            font-size: 4.5rem;
+            font-size: 3.5rem;
             text-align: center;
             word-wrap: break-word;
+            overflow-wrap: break-word;
         }
 
         .controls {
@@ -301,6 +312,64 @@
             font-size: 1.1rem;
             color: #666;
             margin-bottom: 20px;
+        }
+
+        /* SRS Rating Buttons */
+        .srs-rating {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .srs-rating.visible {
+            display: flex;
+        }
+
+        .srs-rating-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .srs-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .srs-btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .srs-btn:hover { transform: translateY(-2px); }
+
+        .srs-btn-0 { background: #dc3545; color: white; }
+        .srs-btn-1 { background: #fd7e14; color: white; }
+        .srs-btn-2 { background: #ffc107; color: #333; }
+        .srs-btn-3 { background: #28a745; color: white; }
+
+        /* SRS Due badge */
+        .due-badge {
+            display: inline-block;
+            background: #E34234;
+            color: white;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 6px;
         }
 
         /* Card List */
@@ -390,17 +459,75 @@
             margin-bottom: 20px;
         }
 
+        /* Search */
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-bar input {
+            flex: 1;
+        }
+
+        .search-results {
+            margin-top: 10px;
+        }
+
+        .search-result-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #718652;
+        }
+
+        .search-result-item .deck-tag {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        /* Keyboard shortcut hint */
+        .shortcut-hint {
+            background: #f0f4eb;
+            border: 1px solid #c8d8b0;
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-size: 0.85rem;
+            color: #556b3a;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .shortcut-hint kbd {
+            background: white;
+            border: 1px solid #aac480;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 0.8rem;
+            font-family: monospace;
+        }
+
+        /* Backup section */
+        .backup-section {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
         @media (max-width: 768px) {
             h1 {
                 font-size: 2rem;
             }
 
             .card-text {
-                font-size: 3.5rem;
+                font-size: 2.5rem;
             }
 
             .flashcard {
-                height: 300px;
+                min-height: 200px;
             }
         }
     </style>
@@ -416,7 +543,9 @@
             <div class="tabs">
                 <button class="tab active" data-tab="create">Create Cards</button>
                 <button class="tab" data-tab="study">Study Mode</button>
+                <button class="tab" data-tab="srs">⏰ Due Now <span class="due-badge" id="dueBadge">0</span></button>
                 <button class="tab" data-tab="quiz">Quiz Mode</button>
+                <button class="tab" data-tab="search">🔍 Search</button>
                 <button class="tab" data-tab="manage">Manage Cards</button>
             </div>
 
@@ -457,6 +586,15 @@
                     </div>
                     <button type="submit" class="btn btn-primary">Add Card</button>
                 </form>
+
+                <h2 style="margin-bottom: 15px;">💾 Backup & Restore</h2>
+                <p style="color:#666; margin-bottom:12px; font-size:0.95rem;">Export all your decks to a JSON file to keep a backup, then restore it later if needed.</p>
+                <div class="backup-section">
+                    <button class="btn btn-success" id="backupBtn">⬇️ Export Backup (JSON)</button>
+                    <button class="btn btn-secondary" id="restoreBtn">⬆️ Restore from Backup</button>
+                    <input type="file" id="restoreInput" class="file-input" accept=".json">
+                </div>
+                <div class="import-status" id="restoreStatus"></div>
             </div>
 
             <!-- Study Mode Tab -->
@@ -478,8 +616,15 @@
                         <div id="bestTimeBack"></div>
                     </div>
                 </div>
+                <div class="shortcut-hint">
+                    <kbd>Space</kbd> Flip &nbsp;
+                    <kbd>←</kbd><kbd>→</kbd> Navigate &nbsp;
+                    <kbd>R</kbd> Recycle &nbsp;
+                    <kbd>P</kbd> Pause &nbsp;
+                    <kbd>1</kbd>–<kbd>3</kbd> Rate (after flip)
+                </div>
                 <div class="progress" id="studyProgress"></div>
-                <div class="flashcard-container">
+                <div class="flashcard-container" style="margin-bottom: 260px;">
                     <div class="flashcard" id="flashcard">
                         <div class="card-face card-front">
                             <div class="card-text" id="cardFront"></div>
@@ -489,12 +634,65 @@
                         </div>
                     </div>
                 </div>
+                <div class="srs-rating" id="srsRating">
+                    <div class="srs-rating-label">How well did you know this?</div>
+                    <div class="srs-buttons">
+                        <button class="srs-btn srs-btn-0" data-rating="0">😖 Forgot</button>
+                        <button class="srs-btn srs-btn-1" data-rating="1">😕 Hard</button>
+                        <button class="srs-btn srs-btn-2" data-rating="2">🙂 Good</button>
+                        <button class="srs-btn srs-btn-3" data-rating="3">😄 Easy</button>
+                    </div>
+                </div>
                 <div class="controls">
                     <button class="btn btn-secondary" id="prevCard">← Previous</button>
                     <button class="btn btn-primary" id="flipCard">Flip Card</button>
                     <button class="btn btn-secondary" id="nextCard">Next →</button>
                     <button class="btn btn-secondary" id="toggleTimer">⏸️ Pause Timer</button>
                     <button class="btn btn-danger" id="recycleCard">♻️ Recycle (Don't Know)</button>
+                </div>
+            </div>
+
+            <!-- SRS / Due Now Tab -->
+            <div class="tab-content" id="srs">
+                <div style="margin-bottom: 20px;">
+                    <h2 style="margin-bottom: 8px;">⏰ Spaced Repetition Review</h2>
+                    <p style="color: #666; font-size: 0.95rem;">Cards due for review based on how well you know them. Rate each card after flipping to schedule its next appearance.</p>
+                </div>
+                <div id="srsStats" style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:20px;"></div>
+                <div class="shortcut-hint">
+                    <kbd>Space</kbd> Flip &nbsp;
+                    <kbd>1</kbd> Forgot &nbsp;
+                    <kbd>2</kbd> Hard &nbsp;
+                    <kbd>3</kbd> Good &nbsp;
+                    <kbd>4</kbd> Easy
+                </div>
+                <div class="flashcard-container" style="margin-bottom: 260px;">
+                    <div class="flashcard" id="srsFlashcard">
+                        <div class="card-face card-front">
+                            <div class="card-text" id="srsFront"></div>
+                        </div>
+                        <div class="card-face card-back">
+                            <div class="card-text" id="srsBack"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="progress" id="srsProgress"></div>
+                <div class="srs-rating visible" id="srsRatingDue" style="display:none !important;">
+                    <div class="srs-rating-label">How well did you know this?</div>
+                    <div class="srs-buttons">
+                        <button class="srs-btn srs-btn-0" data-srs-rating="0">😖 Forgot (1)</button>
+                        <button class="srs-btn srs-btn-1" data-srs-rating="1">😕 Hard (2)</button>
+                        <button class="srs-btn srs-btn-2" data-srs-rating="2">🙂 Good (3)</button>
+                        <button class="srs-btn srs-btn-3" data-srs-rating="3">😄 Easy (4)</button>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button class="btn btn-primary" id="srsFlipBtn">Flip Card</button>
+                </div>
+                <div id="srsDoneMsg" style="display:none; text-align:center; padding:40px;">
+                    <div style="font-size:3rem; margin-bottom:16px;">🎉</div>
+                    <h2>All caught up!</h2>
+                    <p style="color:#666; margin-top:8px;">No cards due right now. Keep studying and come back later.</p>
                 </div>
             </div>
 
@@ -515,6 +713,15 @@
                 </div>
             </div>
 
+            <!-- Search Tab -->
+            <div class="tab-content" id="search">
+                <h2 style="margin-bottom: 16px;">🔍 Search Cards</h2>
+                <div class="search-bar">
+                    <input type="text" id="searchInput" placeholder="Type to search fronts and backs of all cards…" autocomplete="off">
+                </div>
+                <div id="searchResults" class="search-results"></div>
+            </div>
+
             <!-- Manage Cards Tab -->
             <div class="tab-content" id="manage">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -527,7 +734,30 @@
     </div>
 
     <script>
-        // Flashcard App
+        // SM-2 spaced repetition algorithm
+        function sm2(card, rating) {
+            // rating: 0=forgot, 1=hard, 2=good, 3=easy
+            let { interval = 1, repetitions = 0, easeFactor = 2.5 } = card.srs || {};
+
+            if (rating < 1) {
+                // Failed — reset
+                repetitions = 0;
+                interval = 1;
+            } else {
+                if (repetitions === 0) interval = 1;
+                else if (repetitions === 1) interval = 6;
+                else interval = Math.round(interval * easeFactor);
+
+                repetitions++;
+                easeFactor = Math.max(1.3, easeFactor + 0.1 - (3 - rating) * (0.08 + (3 - rating) * 0.02));
+            }
+
+            const now = Date.now();
+            const nextReview = now + interval * 86400000;
+
+            return { interval, repetitions, easeFactor, nextReview, lastReviewed: now };
+        }
+
         class FlashcardApp {
             constructor() {
                 this.cards = JSON.parse(localStorage.getItem('flashcards')) || [];
@@ -547,6 +777,13 @@
                 this.timerPaused = false;
                 this.pausedElapsedTime = 0;
                 this.cardsCompletedThisRun = new Set();
+
+                // SRS review queue
+                this.srsQueue = [];
+                this.srsIndex = 0;
+                this.srsFlipped = false;
+                this.activeTab = 'study';
+
                 this.init();
             }
 
@@ -559,18 +796,313 @@
                 this.setupImport();
                 this.setupDeckSelector();
                 this.setupExport();
+                this.setupSearch();
+                this.setupBackup();
+                this.setupKeyboard();
+                this.setupSrsMode();
                 this.updateCardCount();
+                this.updateDueBadge();
             }
+
+            // ── Keyboard shortcuts ──────────────────────────────────────────
+
+            setupKeyboard() {
+                document.addEventListener('keydown', (e) => {
+                    // Don't fire when typing in an input/textarea
+                    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+
+                    if (this.activeTab === 'study') {
+                        switch (e.key) {
+                            case ' ':
+                                e.preventDefault();
+                                this.flipCard();
+                                break;
+                            case 'ArrowRight':
+                            case 'ArrowDown':
+                                e.preventDefault();
+                                this.navigateCard(1);
+                                break;
+                            case 'ArrowLeft':
+                            case 'ArrowUp':
+                                e.preventDefault();
+                                this.navigateCard(-1);
+                                break;
+                            case 'r':
+                            case 'R':
+                                this.recycleCard();
+                                break;
+                            case 'p':
+                            case 'P':
+                                this.toggleTimer();
+                                break;
+                            case '1': if (this.isFlipped) this.rateSrsCard(0, 'study'); break;
+                            case '2': if (this.isFlipped) this.rateSrsCard(1, 'study'); break;
+                            case '3': if (this.isFlipped) this.rateSrsCard(2, 'study'); break;
+                            case '4': if (this.isFlipped) this.rateSrsCard(3, 'study'); break;
+                        }
+                    } else if (this.activeTab === 'srs') {
+                        switch (e.key) {
+                            case ' ':
+                                e.preventDefault();
+                                this.srsFlipCard();
+                                break;
+                            case '1': if (this.srsFlipped) this.rateSrsCard(0, 'srs'); break;
+                            case '2': if (this.srsFlipped) this.rateSrsCard(1, 'srs'); break;
+                            case '3': if (this.srsFlipped) this.rateSrsCard(2, 'srs'); break;
+                            case '4': if (this.srsFlipped) this.rateSrsCard(3, 'srs'); break;
+                        }
+                    }
+                });
+            }
+
+            // ── Search ─────────────────────────────────────────────────────
+
+            setupSearch() {
+                const input = document.getElementById('searchInput');
+                input.addEventListener('input', () => this.runSearch(input.value.trim()));
+            }
+
+            runSearch(query) {
+                const container = document.getElementById('searchResults');
+                if (!query) {
+                    container.innerHTML = '';
+                    return;
+                }
+
+                const lower = query.toLowerCase();
+                const results = [];
+
+                this.decks.forEach(deck => {
+                    deck.cards.forEach(card => {
+                        if (card.front.toLowerCase().includes(lower) || card.back.toLowerCase().includes(lower)) {
+                            results.push({ card, deckName: deck.name });
+                        }
+                    });
+                });
+
+                if (results.length === 0) {
+                    container.innerHTML = '<p style="color:#999; text-align:center; padding:20px;">No cards found.</p>';
+                    return;
+                }
+
+                container.innerHTML = results.map(({ card, deckName }) => `
+                    <div class="search-result-item">
+                        <strong>${this.highlight(card.front, lower)}</strong>
+                        <div style="margin-top:4px;">${this.highlight(card.back, lower)}</div>
+                        <div class="deck-tag">📂 ${deckName}</div>
+                    </div>
+                `).join('');
+            }
+
+            highlight(text, query) {
+                const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                return text.replace(new RegExp(`(${escaped})`, 'gi'), '<mark>$1</mark>');
+            }
+
+            // ── Backup / Restore ────────────────────────────────────────────
+
+            setupBackup() {
+                document.getElementById('backupBtn').addEventListener('click', () => this.exportBackup());
+                const restoreBtn = document.getElementById('restoreBtn');
+                const restoreInput = document.getElementById('restoreInput');
+
+                restoreBtn.addEventListener('click', () => restoreInput.click());
+                restoreInput.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) this.importBackup(file);
+                    restoreInput.value = '';
+                });
+            }
+
+            exportBackup() {
+                const data = JSON.stringify({ decks: this.decks, exportedAt: new Date().toISOString() }, null, 2);
+                const blob = new Blob([data], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `flashcard-backup-${new Date().toISOString().slice(0, 10)}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+
+            importBackup(file) {
+                const statusEl = document.getElementById('restoreStatus');
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (!data.decks || !Array.isArray(data.decks)) throw new Error('Invalid format');
+                        if (!confirm(`This will merge ${data.decks.length} deck(s) from the backup into your current data. Continue?`)) return;
+                        this.decks = [...this.decks, ...data.decks];
+                        this.saveDecks();
+                        this.renderDeckSelector();
+                        this.updateCardCount();
+                        this.updateDueBadge();
+                        this.showImportStatus(statusEl, `✓ Restored ${data.decks.length} deck(s) from backup.`, 'success');
+                    } catch {
+                        this.showImportStatus(statusEl, 'Invalid backup file.', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            }
+
+            // ── SRS Mode ────────────────────────────────────────────────────
+
+            setupSrsMode() {
+                document.getElementById('srsFlipBtn').addEventListener('click', () => this.srsFlipCard());
+
+                document.querySelectorAll('[data-srs-rating]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        this.rateSrsCard(parseInt(btn.dataset.srsRating), 'srs');
+                    });
+                });
+
+                document.querySelectorAll('[data-rating]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        this.rateSrsCard(parseInt(btn.dataset.rating), 'study');
+                    });
+                });
+            }
+
+            getDueCards() {
+                const now = Date.now();
+                const due = [];
+                this.decks.forEach(deck => {
+                    deck.cards.forEach(card => {
+                        const next = card.srs ? card.srs.nextReview : 0;
+                        if (!next || next <= now) {
+                            due.push({ card, deck });
+                        }
+                    });
+                });
+                return due;
+            }
+
+            updateDueBadge() {
+                const count = this.getDueCards().length;
+                document.getElementById('dueBadge').textContent = count;
+            }
+
+            loadSrsQueue() {
+                this.srsQueue = this.getDueCards();
+                this.srsIndex = 0;
+                this.srsFlipped = false;
+                this.showSrsCard();
+                this.updateSrsStats();
+            }
+
+            showSrsCard() {
+                const doneMsg = document.getElementById('srsDoneMsg');
+                const flipBtn = document.getElementById('srsFlipBtn');
+                const ratingEl = document.getElementById('srsRatingDue');
+                const flashcard = document.getElementById('srsFlashcard');
+                const progress = document.getElementById('srsProgress');
+
+                if (this.srsQueue.length === 0) {
+                    doneMsg.style.display = 'block';
+                    flashcard.parentElement.style.display = 'none';
+                    flipBtn.style.display = 'none';
+                    ratingEl.style.removeProperty('display');
+                    ratingEl.classList.remove('visible');
+                    progress.textContent = '';
+                    return;
+                }
+
+                doneMsg.style.display = 'none';
+                flashcard.parentElement.style.display = '';
+                flipBtn.style.display = '';
+
+                if (this.srsIndex >= this.srsQueue.length) {
+                    this.srsIndex = 0;
+                }
+
+                const { card } = this.srsQueue[this.srsIndex];
+                document.getElementById('srsFront').textContent = card.front;
+                document.getElementById('srsBack').textContent = card.back;
+                flashcard.classList.remove('flipped');
+                this.srsFlipped = false;
+
+                ratingEl.style.setProperty('display', 'none', 'important');
+
+                progress.textContent = `Card ${this.srsIndex + 1} of ${this.srsQueue.length} due`;
+            }
+
+            srsFlipCard() {
+                const flashcard = document.getElementById('srsFlashcard');
+                const ratingEl = document.getElementById('srsRatingDue');
+                flashcard.classList.add('flipped');
+                this.srsFlipped = true;
+                ratingEl.style.removeProperty('display');
+                ratingEl.classList.add('visible');
+            }
+
+            rateSrsCard(rating, context) {
+                if (context === 'srs') {
+                    if (this.srsQueue.length === 0) return;
+                    const { card, deck } = this.srsQueue[this.srsIndex];
+                    this.applyRating(card, deck, rating);
+
+                    // Remove from queue if good/easy, else move to end
+                    if (rating >= 2) {
+                        this.srsQueue.splice(this.srsIndex, 1);
+                        if (this.srsIndex >= this.srsQueue.length) this.srsIndex = 0;
+                    } else {
+                        const item = this.srsQueue.splice(this.srsIndex, 1)[0];
+                        this.srsQueue.push(item);
+                    }
+
+                    this.showSrsCard();
+                    this.updateSrsStats();
+                    this.updateDueBadge();
+                } else if (context === 'study') {
+                    if (!this.currentDeck || this.cards.length === 0) return;
+                    const card = this.cards[this.currentIndex];
+                    const deck = this.currentDeck;
+                    this.applyRating(card, deck, rating);
+                    this.updateDueBadge();
+
+                    // Hide rating UI and move to next card
+                    document.getElementById('srsRating').classList.remove('visible');
+                    this.navigateCard(1);
+                }
+            }
+
+            applyRating(card, deck, rating) {
+                card.srs = sm2(card, rating);
+                // Persist back into the deck object
+                const deckRef = this.decks.find(d => d.id === deck.id);
+                if (deckRef) {
+                    const cardRef = deckRef.cards.find(c => c.id === card.id);
+                    if (cardRef) cardRef.srs = card.srs;
+                }
+                this.saveDecks();
+            }
+
+            updateSrsStats() {
+                const el = document.getElementById('srsStats');
+                const total = this.getDueCards().length;
+                const remaining = this.srsQueue.length;
+                el.innerHTML = `
+                    <div style="background:#fef5f4; border-radius:8px; padding:12px 18px;">
+                        <div style="font-size:1.5rem; font-weight:bold; color:#E34234;">${remaining}</div>
+                        <div style="font-size:0.85rem; color:#888;">remaining this session</div>
+                    </div>
+                    <div style="background:#f0f4eb; border-radius:8px; padding:12px 18px;">
+                        <div style="font-size:1.5rem; font-weight:bold; color:#718652;">${total}</div>
+                        <div style="font-size:0.85rem; color:#888;">total due now</div>
+                    </div>
+                `;
+            }
+
+            // ── Import ──────────────────────────────────────────────────────
 
             setupImport() {
                 const dropZone = document.getElementById('dropZone');
                 const fileInput = document.getElementById('fileInput');
                 const importStatus = document.getElementById('importStatus');
 
-                // Click to open file dialog
                 dropZone.addEventListener('click', () => fileInput.click());
 
-                // Drag and drop handlers
                 dropZone.addEventListener('dragover', (e) => {
                     e.preventDefault();
                     dropZone.classList.add('dragover');
@@ -584,17 +1116,12 @@
                     e.preventDefault();
                     dropZone.classList.remove('dragover');
                     const file = e.dataTransfer.files[0];
-                    if (file) {
-                        this.handleFile(file, importStatus);
-                    }
+                    if (file) this.handleFile(file, importStatus);
                 });
 
-                // File input change
                 fileInput.addEventListener('change', (e) => {
                     const file = e.target.files[0];
-                    if (file) {
-                        this.handleFile(file, importStatus);
-                    }
+                    if (file) this.handleFile(file, importStatus);
                 });
             }
 
@@ -619,14 +1146,13 @@
                 const deckSelector = document.getElementById('deckSelector');
                 const quizDeckSelector = document.getElementById('quizDeckSelector');
 
-                const options = this.decks.map(deck => 
+                const options = this.decks.map(deck =>
                     `<option value="${deck.id}">${deck.name}</option>`
                 ).join('');
 
                 deckSelector.innerHTML = `<option value="">-- Select a deck --</option>${options}`;
                 quizDeckSelector.innerHTML = `<option value="">-- Select a deck --</option>${options}`;
 
-                // If there's only one deck, select it automatically
                 if (this.decks.length === 1) {
                     deckSelector.value = this.decks[0].id;
                     quizDeckSelector.value = this.decks[0].id;
@@ -643,6 +1169,7 @@
                     this.isFlipped = false;
                     this.cardsCompletedThisRun = new Set();
                     document.getElementById('flashcard').classList.remove('flipped');
+                    document.getElementById('srsRating').classList.remove('visible');
                     this.showCard();
                     this.updateCardCount();
                     this.startTimer();
@@ -671,32 +1198,22 @@
                     return;
                 }
 
-                // Create a copy of the original data
                 const exportData = this.originalFileData.map(row => [...row]);
 
-                // Create maps for deck data
                 const cardToDeckMap = new Map();
                 const deckFrontTimes = new Map();
                 const deckBackTimes = new Map();
-                
+
                 this.decks.forEach(deck => {
                     if (deck.deckNumber) {
-                        if (deck.bestTimeFront) {
-                            deckFrontTimes.set(deck.deckNumber, deck.bestTimeFront);
-                        }
-                        if (deck.bestTimeBack) {
-                            deckBackTimes.set(deck.deckNumber, deck.bestTimeBack);
-                        }
-                        deck.cards.forEach(card => {
-                            cardToDeckMap.set(card.front, deck.deckNumber);
-                        });
+                        if (deck.bestTimeFront) deckFrontTimes.set(deck.deckNumber, deck.bestTimeFront);
+                        if (deck.bestTimeBack) deckBackTimes.set(deck.deckNumber, deck.bestTimeBack);
+                        deck.cards.forEach(card => cardToDeckMap.set(card.front, deck.deckNumber));
                     }
                 });
 
-                // Update Column D with deck numbers, Column E with front best times, Column F with back best times
                 exportData.forEach((row, index) => {
                     if (index === 0) {
-                        // Header row
                         if (!row[3]) row[3] = 'Deck';
                         if (!row[4]) row[4] = 'Best Time (Front)';
                         if (!row[5]) row[5] = 'Best Time (Back)';
@@ -707,48 +1224,24 @@
                     if (front && cardToDeckMap.has(String(front).trim())) {
                         const deckNum = cardToDeckMap.get(String(front).trim());
                         row[3] = deckNum;
-                        
-                        // Add front best time if it exists for this deck
                         if (deckFrontTimes.has(deckNum)) {
-                            const seconds = deckFrontTimes.get(deckNum);
-                            const mins = Math.floor(seconds / 60);
-                            const secs = seconds % 60;
-                            row[4] = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                            const s = deckFrontTimes.get(deckNum);
+                            row[4] = `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
                         }
-                        
-                        // Add back best time if it exists for this deck
                         if (deckBackTimes.has(deckNum)) {
-                            const seconds = deckBackTimes.get(deckNum);
-                            const mins = Math.floor(seconds / 60);
-                            const secs = seconds % 60;
-                            row[5] = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                            const s = deckBackTimes.get(deckNum);
+                            row[5] = `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
                         }
                     }
                 });
 
-                // Create workbook and worksheet
                 const wb = XLSX.utils.book_new();
                 const ws = XLSX.utils.aoa_to_sheet(exportData);
-
-                // Set column widths
-                ws['!cols'] = [
-                    { wch: 25 },  // Column A
-                    { wch: 30 },  // Column B
-                    { wch: 10 },  // Column C
-                    { wch: 10 },  // Column D
-                    { wch: 16 },  // Column E
-                    { wch: 16 }   // Column F
-                ];
-
+                ws['!cols'] = [{ wch: 25 }, { wch: 30 }, { wch: 10 }, { wch: 10 }, { wch: 16 }, { wch: 16 }];
                 XLSX.utils.book_append_sheet(wb, ws, 'Vocabulary');
+                XLSX.writeFile(wb, this.originalFileName);
 
-                // Use exact same filename as received
-                const fileName = this.originalFileName;
-
-                // Export file
-                XLSX.writeFile(wb, fileName);
-
-                alert(`✓ File exported as "${fileName}"\n\nColumn D: Deck numbers\nColumn E: Best times (Front → Back)\nColumn F: Best times (Back → Front)\n\nRe-import this file to maintain consistent decks!`);
+                alert(`✓ File exported as "${this.originalFileName}"\n\nColumn D: Deck numbers\nColumn E: Best times (Front → Back)\nColumn F: Best times (Back → Front)\n\nRe-import this file to maintain consistent decks!`);
             }
 
             handleFile(file, statusElement) {
@@ -767,17 +1260,15 @@
                         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                         const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
-                        // Store original data for export
                         this.originalFileData = jsonData;
 
                         let importedCards = [];
                         let skipped = 0;
                         const deckSize = 20;
-                        const deckMap = new Map(); // Map deck numbers to cards
+                        const deckMap = new Map();
 
                         jsonData.forEach((row, index) => {
-                            // Skip header row if it exists
-                            if (index === 0 && (String(row[0]).toLowerCase().includes('front') || 
+                            if (index === 0 && (String(row[0]).toLowerCase().includes('front') ||
                                                String(row[0]).toLowerCase().includes('spanish') ||
                                                String(row[0]).toLowerCase().includes('question'))) {
                                 return;
@@ -785,10 +1276,9 @@
 
                             const front = row[0];
                             const back = row[1];
-                            const learned = row[2]; // Column C
-                            const existingDeckNum = row[3]; // Column D - existing deck number
+                            const learned = row[2];
+                            const existingDeckNum = row[3];
 
-                            // Skip if Column C contains "Y" (already learned)
                             if (learned && String(learned).trim().toUpperCase() === 'Y') {
                                 skipped++;
                                 return;
@@ -802,7 +1292,6 @@
                                     originalRowIndex: index
                                 };
 
-                                // Use existing deck number if available, otherwise assign new one
                                 let deckNum;
                                 if (existingDeckNum && !isNaN(existingDeckNum)) {
                                     deckNum = parseInt(existingDeckNum);
@@ -810,21 +1299,17 @@
                                     deckNum = Math.floor(importedCards.length / deckSize) + 1;
                                 }
 
-                                if (!deckMap.has(deckNum)) {
-                                    deckMap.set(deckNum, []);
-                                }
+                                if (!deckMap.has(deckNum)) deckMap.set(deckNum, []);
                                 deckMap.get(deckNum).push(card);
-                                
                                 importedCards.push(card);
                             } else {
                                 skipped++;
                             }
                         });
 
-                        // Create decks from the map
                         const newDecks = [];
                         const sortedDeckNums = Array.from(deckMap.keys()).sort((a, b) => a - b);
-                        
+
                         sortedDeckNums.forEach(deckNum => {
                             const deckCards = deckMap.get(deckNum);
                             newDecks.push({
@@ -839,21 +1324,14 @@
                         this.decks = [...this.decks, ...newDecks];
                         this.saveDecks();
                         this.renderDeckSelector();
+                        this.updateDueBadge();
 
-                        const totalDecks = newDecks.length;
-                        const totalCards = importedCards.length;
-                        let message = `✓ Successfully imported ${totalCards} cards into ${totalDecks} deck${totalDecks > 1 ? 's' : ''}!`;
-                        if (skipped > 0) {
-                            message += ` (Skipped ${skipped} rows: already learned or empty)`;
-                        }
+                        let message = `✓ Successfully imported ${importedCards.length} cards into ${newDecks.length} deck${newDecks.length > 1 ? 's' : ''}!`;
+                        if (skipped > 0) message += ` (Skipped ${skipped} rows)`;
                         this.showImportStatus(statusElement, message, 'success');
 
-                        // Show export button
                         document.getElementById('exportSection').style.display = 'block';
-                        const exportBtn = document.getElementById('exportBtn');
-                        exportBtn.textContent = `📤 Export ${this.originalFileName}`;
-
-                        // Reset file input
+                        document.getElementById('exportBtn').textContent = `📤 Export ${this.originalFileName}`;
                         document.getElementById('fileInput').value = '';
 
                     } catch (error) {
@@ -868,10 +1346,7 @@
                 element.textContent = message;
                 element.className = `import-status ${type}`;
                 element.style.display = 'block';
-
-                setTimeout(() => {
-                    element.style.display = 'none';
-                }, 5000);
+                setTimeout(() => { element.style.display = 'none'; }, 5000);
             }
 
             setupTabs() {
@@ -881,6 +1356,7 @@
                 tabs.forEach(tab => {
                     tab.addEventListener('click', () => {
                         const tabName = tab.dataset.tab;
+                        this.activeTab = tabName;
 
                         tabs.forEach(t => t.classList.remove('active'));
                         contents.forEach(c => c.classList.remove('active'));
@@ -892,6 +1368,8 @@
                             this.showCard();
                         } else if (tabName === 'manage') {
                             this.renderCardList();
+                        } else if (tabName === 'srs') {
+                            this.loadSrsQueue();
                         }
                     });
                 });
@@ -903,7 +1381,6 @@
                     e.preventDefault();
                     const front = document.getElementById('front').value.trim();
                     const back = document.getElementById('back').value.trim();
-
                     if (front && back) {
                         this.addCard(front, back);
                         form.reset();
@@ -912,13 +1389,8 @@
             }
 
             addCard(front, back) {
-                const card = {
-                    id: Date.now(),
-                    front,
-                    back
-                };
-                
-                // Add to a "Manual Cards" deck
+                const card = { id: Date.now(), front, back };
+
                 let manualDeck = this.decks.find(d => d.name === 'Manual Cards');
                 if (!manualDeck) {
                     manualDeck = {
@@ -929,12 +1401,13 @@
                     };
                     this.decks.push(manualDeck);
                 }
-                
+
                 manualDeck.cards.push(card);
                 this.saveDecks();
                 this.updateCardCount();
+                this.updateDueBadge();
                 this.renderDeckSelector();
-                
+
                 alert('Card added to "Manual Cards" deck!');
             }
 
@@ -960,15 +1433,19 @@
                 const flashcard = document.getElementById('flashcard');
                 this.isFlipped = !this.isFlipped;
                 flashcard.classList.toggle('flipped');
+
+                // Show SRS rating panel after flip
+                if (this.isFlipped && this.currentDeck) {
+                    document.getElementById('srsRating').classList.add('visible');
+                } else {
+                    document.getElementById('srsRating').classList.remove('visible');
+                }
             }
 
             navigateCard(direction) {
                 if (this.cards.length === 0) return;
 
-                // Check completion before moving if going forward
-                if (direction > 0) {
-                    this.checkDeckCompletion();
-                }
+                if (direction > 0) this.checkDeckCompletion();
 
                 this.currentIndex += direction;
                 if (this.currentIndex < 0) this.currentIndex = this.cards.length - 1;
@@ -976,6 +1453,7 @@
 
                 this.isFlipped = false;
                 document.getElementById('flashcard').classList.remove('flipped');
+                document.getElementById('srsRating').classList.remove('visible');
                 this.showCard();
             }
 
@@ -986,7 +1464,7 @@
                     document.getElementById('studyProgress').textContent = '';
                     return;
                 }
-                
+
                 if (this.cards.length === 0) {
                     document.getElementById('cardFront').textContent = 'Select a deck';
                     document.getElementById('cardBack').textContent = 'Choose a deck from the dropdown above';
@@ -995,8 +1473,7 @@
                 }
 
                 const card = this.cards[this.currentIndex];
-                
-                // Show cards based on reversed state
+
                 if (this.isDeckReversed) {
                     document.getElementById('cardFront').textContent = card.back;
                     document.getElementById('cardBack').textContent = card.front;
@@ -1004,9 +1481,9 @@
                     document.getElementById('cardFront').textContent = card.front;
                     document.getElementById('cardBack').textContent = card.back;
                 }
-                
-                document.getElementById('studyProgress').textContent = 
-                    `Card ${this.currentIndex + 1} of ${this.cards.length}` + 
+
+                document.getElementById('studyProgress').textContent =
+                    `Card ${this.currentIndex + 1} of ${this.cards.length}` +
                     (this.currentDeck ? ` • ${this.currentDeck.name}` : '');
             }
 
@@ -1022,36 +1499,23 @@
             recycleCard() {
                 if (this.cards.length === 0) return;
 
-                // Get the current card
                 const currentCard = this.cards[this.currentIndex];
-                
-                // Remove it from current position
                 this.cards.splice(this.currentIndex, 1);
-                
-                // Add it to the end of the deck
                 this.cards.push(currentCard);
-                
-                // Remove from completed set since we're seeing it again
                 this.cardsCompletedThisRun.delete(currentCard.id);
-                
-                // Reset flip state
+
                 this.isFlipped = false;
                 document.getElementById('flashcard').classList.remove('flipped');
-                
-                // Show the next card (which is now at the current index since we removed one)
-                // If we were at the end, wrap to beginning
-                if (this.currentIndex >= this.cards.length) {
-                    this.currentIndex = 0;
-                }
-                
+                document.getElementById('srsRating').classList.remove('visible');
+
+                if (this.currentIndex >= this.cards.length) this.currentIndex = 0;
+
                 this.showCard();
-                
-                // Visual feedback
+
                 const recycleBtn = document.getElementById('recycleCard');
                 const originalText = recycleBtn.textContent;
                 recycleBtn.textContent = '✓ Recycled to End!';
                 recycleBtn.disabled = true;
-                
                 setTimeout(() => {
                     recycleBtn.textContent = originalText;
                     recycleBtn.disabled = false;
@@ -1066,11 +1530,9 @@
                 this.currentElapsedTime = 0;
                 this.updateTimerDisplay();
                 this.updateToggleTimerButton();
-                
+
                 this.timerInterval = setInterval(() => {
-                    if (!this.timerPaused) {
-                        this.updateTimerDisplay();
-                    }
+                    if (!this.timerPaused) this.updateTimerDisplay();
                 }, 1000);
             }
 
@@ -1083,18 +1545,16 @@
             }
 
             toggleTimer() {
-                if (!this.timerInterval) return; // No timer running
-                
+                if (!this.timerInterval) return;
+
                 this.timerPaused = !this.timerPaused;
-                
+
                 if (this.timerPaused) {
-                    // Pausing - store the current elapsed time
                     this.pausedElapsedTime = this.currentElapsedTime;
                 } else {
-                    // Resuming - adjust start time to account for paused duration
                     this.timerStartTime = Date.now() - (this.pausedElapsedTime * 1000);
                 }
-                
+
                 this.updateToggleTimerButton();
             }
 
@@ -1113,47 +1573,35 @@
 
             updateTimerDisplay() {
                 if (!this.timerStartTime) return;
-                
                 if (!this.timerPaused) {
                     this.currentElapsedTime = Math.floor((Date.now() - this.timerStartTime) / 1000);
                 }
-                
                 const minutes = Math.floor(this.currentElapsedTime / 60);
                 const seconds = this.currentElapsedTime % 60;
-                
-                const display = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                document.getElementById('currentTimer').textContent = display;
+                document.getElementById('currentTimer').textContent =
+                    `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
             }
 
             formatTime(seconds) {
                 const mins = Math.floor(seconds / 60);
                 const secs = seconds % 60;
-                return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                return `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
             }
 
             displayBestTime() {
                 const frontTimeEl = document.getElementById('bestTimeFront');
                 const backTimeEl = document.getElementById('bestTimeBack');
                 const deckModeEl = document.getElementById('deckMode');
-                
-                if (this.isDeckReversed) {
-                    deckModeEl.textContent = 'Back → Front';
-                } else {
-                    deckModeEl.textContent = 'Front → Back';
-                }
-                
+
+                deckModeEl.textContent = this.isDeckReversed ? 'Back → Front' : 'Front → Back';
+
                 if (this.currentDeck) {
-                    if (this.currentDeck.bestTimeFront) {
-                        frontTimeEl.textContent = `⭐ Front Best: ${this.formatTime(this.currentDeck.bestTimeFront)}`;
-                    } else {
-                        frontTimeEl.textContent = 'Front: No best time';
-                    }
-                    
-                    if (this.currentDeck.bestTimeBack) {
-                        backTimeEl.textContent = `⭐ Back Best: ${this.formatTime(this.currentDeck.bestTimeBack)}`;
-                    } else {
-                        backTimeEl.textContent = 'Back: No best time';
-                    }
+                    frontTimeEl.textContent = this.currentDeck.bestTimeFront
+                        ? `⭐ Front Best: ${this.formatTime(this.currentDeck.bestTimeFront)}`
+                        : 'Front: No best time';
+                    backTimeEl.textContent = this.currentDeck.bestTimeBack
+                        ? `⭐ Back Best: ${this.formatTime(this.currentDeck.bestTimeBack)}`
+                        : 'Back: No best time';
                 } else {
                     frontTimeEl.textContent = '';
                     backTimeEl.textContent = '';
@@ -1162,48 +1610,33 @@
 
             checkDeckCompletion() {
                 if (!this.currentDeck) return;
-                
-                // Mark current card as completed
+
                 const currentCard = this.cards[this.currentIndex];
                 this.cardsCompletedThisRun.add(currentCard.id);
-                
-                // Check if all original cards have been completed
-                const allCardsCompleted = this.currentDeck.cards.every(card => 
+
+                const allCardsCompleted = this.currentDeck.cards.every(card =>
                     this.cardsCompletedThisRun.has(card.id)
                 );
-                
+
                 if (allCardsCompleted) {
                     this.stopTimer();
                     const finalTime = this.currentElapsedTime;
-                    
-                    // Determine which best time to compare/update
                     const timeKey = this.isDeckReversed ? 'bestTimeBack' : 'bestTimeFront';
                     const modeText = this.isDeckReversed ? 'Back → Front' : 'Front → Back';
-                    
-                    // Check if this is a new best time
                     const isNewBest = !this.currentDeck[timeKey] || finalTime < this.currentDeck[timeKey];
-                    
+
                     if (isNewBest) {
                         this.currentDeck[timeKey] = finalTime;
-                        
-                        // Update the deck in the decks array
                         const deckIndex = this.decks.findIndex(d => d.id === this.currentDeck.id);
-                        if (deckIndex !== -1) {
-                            this.decks[deckIndex][timeKey] = finalTime;
-                        }
-                        
+                        if (deckIndex !== -1) this.decks[deckIndex][timeKey] = finalTime;
                         this.saveDecks();
                         this.displayBestTime();
-                        
                         alert(`🎉 Deck Complete! (${modeText})\n\n⭐ NEW BEST TIME: ${this.formatTime(finalTime)}!`);
                     } else {
                         alert(`✅ Deck Complete! (${modeText})\n\nYour Time: ${this.formatTime(finalTime)}\nBest Time: ${this.formatTime(this.currentDeck[timeKey])}`);
                     }
-                    
-                    // Shuffle the deck for next run
+
                     this.shuffleDeck();
-                    
-                    // Reset for next run
                     this.cardsCompletedThisRun = new Set();
                     this.currentIndex = 0;
                     this.startTimer();
@@ -1211,7 +1644,6 @@
             }
 
             shuffleDeck() {
-                // Fisher-Yates shuffle algorithm
                 for (let i = this.cards.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
@@ -1220,29 +1652,21 @@
 
             reverseDeck() {
                 if (!this.currentDeck || this.cards.length === 0) return;
-                
-                // Toggle reversed state
+
                 this.isDeckReversed = !this.isDeckReversed;
-                
-                // Reset for new run
                 this.cardsCompletedThisRun = new Set();
                 this.currentIndex = 0;
                 this.isFlipped = false;
                 document.getElementById('flashcard').classList.remove('flipped');
-                
-                // Restart timer
+                document.getElementById('srsRating').classList.remove('visible');
                 this.startTimer();
-                
-                // Update display
                 this.showCard();
                 this.displayBestTime();
-                
-                // Visual feedback
+
                 const reverseBtn = document.getElementById('reverseDeckBtn');
                 const originalText = reverseBtn.textContent;
                 reverseBtn.textContent = this.isDeckReversed ? '✓ Reversed!' : '✓ Normal!';
                 reverseBtn.disabled = true;
-                
                 setTimeout(() => {
                     reverseBtn.textContent = originalText;
                     reverseBtn.disabled = false;
@@ -1250,11 +1674,8 @@
             }
 
             setupQuizMode() {
-                const startBtn = document.getElementById('startQuiz');
-                const nextBtn = document.getElementById('nextQuizCard');
-
-                startBtn.addEventListener('click', () => this.startQuiz());
-                nextBtn.addEventListener('click', () => this.nextQuizQuestion());
+                document.getElementById('startQuiz').addEventListener('click', () => this.startQuiz());
+                document.getElementById('nextQuizCard').addEventListener('click', () => this.nextQuizQuestion());
             }
 
             startQuiz() {
@@ -1288,7 +1709,7 @@
                 const optionsContainer = document.getElementById('quizOptions');
                 optionsContainer.innerHTML = '';
 
-                options.forEach((option, index) => {
+                options.forEach(option => {
                     const optionDiv = document.createElement('div');
                     optionDiv.className = 'quiz-option';
                     optionDiv.textContent = option;
@@ -1296,8 +1717,7 @@
                     optionsContainer.appendChild(optionDiv);
                 });
 
-                document.getElementById('quizScore').textContent = 
-                    `Score: ${this.quizScore}/${this.quizTotal}`;
+                document.getElementById('quizScore').textContent = `Score: ${this.quizScore}/${this.quizTotal}`;
                 document.getElementById('nextQuizCard').style.display = 'none';
             }
 
@@ -1307,9 +1727,7 @@
 
                 while (options.length < 4 && otherCards.length >= options.length) {
                     const randomCard = otherCards[Math.floor(Math.random() * otherCards.length)];
-                    if (!options.includes(randomCard.back)) {
-                        options.push(randomCard.back);
-                    }
+                    if (!options.includes(randomCard.back)) options.push(randomCard.back);
                 }
 
                 return options.sort(() => Math.random() - 0.5);
@@ -1326,14 +1744,11 @@
                 } else {
                     optionElement.classList.add('incorrect');
                     allOptions.forEach(opt => {
-                        if (opt.textContent === correct) {
-                            opt.classList.add('correct');
-                        }
+                        if (opt.textContent === correct) opt.classList.add('correct');
                     });
                 }
 
-                document.getElementById('quizScore').textContent = 
-                    `Score: ${this.quizScore}/${this.quizTotal}`;
+                document.getElementById('quizScore').textContent = `Score: ${this.quizScore}/${this.quizTotal}`;
                 document.getElementById('nextQuizCard').style.display = 'block';
             }
 
@@ -1364,6 +1779,7 @@
                         this.saveDecks();
                         this.saveCards();
                         this.updateCardCount();
+                        this.updateDueBadge();
                         this.renderCardList();
                         this.renderDeckSelector();
                     }
@@ -1404,6 +1820,7 @@
                     }
                     this.saveDecks();
                     this.updateCardCount();
+                    this.updateDueBadge();
                     this.renderCardList();
                     this.renderDeckSelector();
                 }
@@ -1418,7 +1835,6 @@
             }
         }
 
-        // Initialize app
         const app = new FlashcardApp();
     </script>
 </body>
