@@ -770,7 +770,7 @@
             word-break: break-word;
         }
 
-        .match-tile:hover:not(.matched):not(.selected) {
+        .match-tile:hover:not(.matched):not(.dragging) {
             border-color: #718652;
             background: #f0f4eb;
         }
@@ -779,6 +779,18 @@
             border-color: #E34234;
             background: #fef5f4;
             transform: scale(1.03);
+        }
+
+        .match-tile.dragging {
+            opacity: 0.4;
+            cursor: grabbing;
+        }
+
+        .match-tile.drag-over {
+            border-color: #E34234;
+            background: #fef5f4;
+            transform: scale(1.05);
+            box-shadow: 0 0 12px rgba(227,66,52,0.3);
         }
 
         .match-tile.matched {
@@ -2682,13 +2694,50 @@
                 grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
                 grid.innerHTML = '';
 
+                this.matchDragSrc = null;
+
                 tiles.forEach((tile, idx) => {
                     const el = document.createElement('div');
                     el.className = 'match-tile';
                     el.textContent = tile.text;
+                    el.draggable = true;
                     el.dataset.idx = idx;
                     el.dataset.pairId = tile.id;
+
+                    // Drag source
+                    el.addEventListener('dragstart', (e) => {
+                        if (el.classList.contains('matched')) { e.preventDefault(); return; }
+                        this.matchDragSrc = el;
+                        el.classList.add('dragging');
+                        e.dataTransfer.effectAllowed = 'move';
+                        e.dataTransfer.setData('text/plain', idx);
+                    });
+                    el.addEventListener('dragend', () => {
+                        el.classList.remove('dragging');
+                        document.querySelectorAll('.match-tile').forEach(t => t.classList.remove('drag-over'));
+                    });
+
+                    // Drop target
+                    el.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        if (!el.classList.contains('matched') && el !== this.matchDragSrc) {
+                            e.dataTransfer.dropEffect = 'move';
+                            el.classList.add('drag-over');
+                        }
+                    });
+                    el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+                    el.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        el.classList.remove('drag-over');
+                        if (this.matchDragSrc && this.matchDragSrc !== el) {
+                            this.resolveMatchDrop(this.matchDragSrc, el);
+                        }
+                        this.matchDragSrc = null;
+                    });
+
+                    // Touch fallback (tap-to-select still works)
                     el.addEventListener('click', () => this.clickMatchTile(el));
+
                     grid.appendChild(el);
                 });
 
@@ -2707,39 +2756,51 @@
                 }
             }
 
+            resolveMatchDrop(a, b) {
+                if (this.matchLocked) return;
+                if (a.classList.contains('matched') || b.classList.contains('matched')) return;
+                a.classList.remove('selected');
+                b.classList.remove('selected');
+                this.evaluateMatchPair(a, b);
+            }
+
             clickMatchTile(el) {
                 if (this.matchLocked) return;
-                if (el.classList.contains('matched') || el.classList.contains('selected')) return;
-
+                if (el.classList.contains('matched')) return;
+                // If already selected, deselect
+                if (el.classList.contains('selected')) {
+                    el.classList.remove('selected');
+                    this.matchSelected = null;
+                    return;
+                }
                 el.classList.add('selected');
-
                 if (!this.matchSelected) {
                     this.matchSelected = el;
                     return;
                 }
-
                 const first = this.matchSelected;
                 this.matchSelected = null;
+                this.evaluateMatchPair(first, el);
+            }
 
-                if (first.dataset.pairId === el.dataset.pairId && first !== el) {
-                    // Match!
-                    first.classList.remove('selected');
-                    el.classList.remove('selected');
-                    first.classList.add('matched');
-                    el.classList.add('matched');
+            evaluateMatchPair(a, b) {
+                if (a.dataset.pairId === b.dataset.pairId) {
+                    a.classList.remove('selected');
+                    b.classList.remove('selected');
+                    a.classList.add('matched');
+                    b.classList.add('matched');
                     this.matchPairsFound++;
                     this.updateMatchHUD();
                     if (this.matchPairsFound === this.matchPairsTotal) this.endMatchGame();
                 } else {
-                    // Wrong
                     this.matchMistakes++;
                     this.matchLocked = true;
                     this.updateMatchHUD();
-                    first.classList.add('wrong-flash');
-                    el.classList.add('wrong-flash');
+                    a.classList.add('wrong-flash');
+                    b.classList.add('wrong-flash');
                     setTimeout(() => {
-                        first.classList.remove('selected', 'wrong-flash');
-                        el.classList.remove('selected', 'wrong-flash');
+                        a.classList.remove('selected', 'wrong-flash');
+                        b.classList.remove('selected', 'wrong-flash');
                         this.matchLocked = false;
                     }, 600);
                 }
