@@ -800,22 +800,173 @@
             75% { transform: translateX(6px); }
         }
 
+        /* ── Falling Words ───────────────────────────────────────────── */
+
+        .fw-arena {
+            display: none;
+        }
+
+        .fw-arena.active { display: block; }
+
+        .fw-hud {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #111;
+            border-radius: 12px;
+            padding: 12px 20px;
+            margin-bottom: 0;
+            flex-wrap: wrap;
+            gap: 8px;
+            color: white;
+        }
+
+        .fw-hud .hud-value { font-size: 1.6rem; font-weight: 700; color: #E34234; }
+        .fw-hud .hud-label { font-size: 0.75rem; color: #aaa; }
+        .fw-hud .hud-item  { text-align: center; }
+        .fw-hud .hud-lives { font-size: 1.4rem; letter-spacing: 4px; }
+
+        #fwField {
+            position: relative;
+            background: linear-gradient(180deg, #0a0a1a 0%, #111827 100%);
+            border-radius: 0 0 12px 12px;
+            overflow: hidden;
+            height: 360px;
+            margin-bottom: 0;
+        }
+
+        .fw-ground {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 4px;
+            background: #E34234;
+            box-shadow: 0 0 10px #E34234;
+        }
+
+        .fw-word {
+            position: absolute;
+            top: -50px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            padding: 8px 14px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 700;
+            white-space: nowrap;
+            cursor: default;
+            transition: background 0.1s;
+            text-shadow: 0 0 8px rgba(255,255,255,0.4);
+        }
+
+        .fw-word.targeted {
+            border-color: #ffc107;
+            background: rgba(255,193,7,0.15);
+            box-shadow: 0 0 12px rgba(255,193,7,0.4);
+        }
+
+        .fw-word.exploding {
+            animation: fwExplode 0.35s ease forwards;
+        }
+
+        @keyframes fwExplode {
+            0%   { transform: scale(1);   opacity: 1; }
+            50%  { transform: scale(1.5); opacity: 0.6; }
+            100% { transform: scale(0);   opacity: 0; }
+        }
+
+        .fw-particle {
+            position: absolute;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: fwParticle 0.6s ease forwards;
+        }
+
+        @keyframes fwParticle {
+            0%   { transform: translate(0,0) scale(1); opacity: 1; }
+            100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
+        }
+
+        .fw-level-banner {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: #ffc107;
+            text-shadow: 0 0 20px rgba(255,193,7,0.8);
+            animation: fwBanner 1.2s ease forwards;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        @keyframes fwBanner {
+            0%   { opacity: 0; transform: translate(-50%,-50%) scale(0.5); }
+            30%  { opacity: 1; transform: translate(-50%,-50%) scale(1.1); }
+            70%  { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%,-50%) scale(1); }
+        }
+
+        .fw-combo {
+            position: absolute;
+            right: 12px; top: 12px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #ffc107;
+            text-shadow: 0 0 8px rgba(255,193,7,0.6);
+            pointer-events: none;
+        }
+
+        #fwInputRow {
+            background: #1a1a2e;
+            border-radius: 0 0 12px 12px;
+            padding: 12px 16px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        #fwInput {
+            flex: 1;
+            background: #0d0d1a;
+            border: 2px solid #333;
+            border-radius: 8px;
+            color: white;
+            font-size: 1.1rem;
+            padding: 10px 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        #fwInput:focus { border-color: #E34234; }
+        #fwInput.fw-hit  { border-color: #28a745; background: rgba(40,167,69,0.15); }
+        #fwInput.fw-miss { border-color: #dc3545; background: rgba(220,53,69,0.15); }
+
+        .fw-game-over {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0 0 12px 12px;
+            color: white;
+            display: none;
+        }
+
+        .fw-game-over.show { display: flex; }
+        .fw-game-over h2 { font-size: 2.5rem; color: #E34234; margin-bottom: 10px; }
+        .fw-game-over .fw-final-score { font-size: 4rem; font-weight: 900; color: white; }
+        .fw-game-over p { color: #aaa; margin: 6px 0; }
+
         @media (max-width: 768px) {
-            h1 {
-                font-size: 2rem;
-            }
-
-            .card-text {
-                font-size: 2.5rem;
-            }
-
-            .flashcard {
-                min-height: 200px;
-            }
-
-            .speed-options {
-                grid-template-columns: 1fr;
-            }
+            h1 { font-size: 2rem; }
+            .card-text { font-size: 2.5rem; }
+            .flashcard { min-height: 200px; }
+            .speed-options { grid-template-columns: 1fr; }
+            #fwField { height: 280px; }
         }
     </style>
 </head>
@@ -1055,6 +1206,11 @@
                         <h3>Match Game</h3>
                         <p>Tap pairs of fronts and backs to match them. Beat your best time!</p>
                     </div>
+                    <div class="game-card" id="pickFallingWords">
+                        <div class="game-icon">☄️</div>
+                        <h3>Falling Words</h3>
+                        <p>Words rain down — type the translation before they hit the ground. Survive as long as you can!</p>
+                    </div>
                 </div>
 
                 <!-- Speed Round Arena -->
@@ -1085,6 +1241,46 @@
                         <div style="font-size:0.9rem; color:#888;" id="speedNewBest"></div>
                         <button class="btn btn-primary" id="speedPlayAgain" style="margin-top:20px;">Play Again</button>
                         <button class="btn btn-secondary" id="speedBackBtn" style="margin-top:20px;">← Back to Games</button>
+                    </div>
+                </div>
+
+                <!-- Falling Words Arena -->
+                <div class="fw-arena" id="fwArena">
+                    <div class="fw-hud">
+                        <div class="hud-item">
+                            <div class="hud-value" id="fwScore">0</div>
+                            <div class="hud-label">score</div>
+                        </div>
+                        <div class="hud-item">
+                            <div class="hud-value" id="fwLevel">1</div>
+                            <div class="hud-label">level</div>
+                        </div>
+                        <div class="hud-item">
+                            <div class="hud-lives" id="fwLives">❤️❤️❤️</div>
+                            <div class="hud-label">lives</div>
+                        </div>
+                        <div class="hud-item">
+                            <div class="hud-value" id="fwHigh">—</div>
+                            <div class="hud-label">best</div>
+                        </div>
+                    </div>
+                    <div id="fwField">
+                        <div class="fw-ground"></div>
+                        <div class="fw-combo" id="fwCombo"></div>
+                        <div class="fw-game-over" id="fwGameOver">
+                            <h2>GAME OVER</h2>
+                            <div class="fw-final-score" id="fwFinalScore"></div>
+                            <p id="fwNewBest"></p>
+                            <p id="fwOverDetail" style="margin-top:4px;"></p>
+                            <div style="display:flex; gap:12px; margin-top:20px; flex-wrap:wrap; justify-content:center;">
+                                <button class="btn btn-primary" id="fwPlayAgain">Play Again</button>
+                                <button class="btn btn-secondary" id="fwBackBtn">← Back to Games</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="fwInputRow">
+                        <input type="text" id="fwInput" placeholder="Type the translation…" autocomplete="off" spellcheck="false">
+                        <button class="btn btn-secondary" id="fwPauseBtn" style="white-space:nowrap;">⏸ Pause</button>
                     </div>
                 </div>
 
@@ -1778,6 +1974,9 @@
                         tab.classList.add('active');
                         document.getElementById(tabName).classList.add('active');
 
+                        // Stop falling words when leaving game tab
+                        if (this.activeTab === 'game' && tabName !== 'game') this.fwStop();
+
                         if (tabName === 'study') {
                             this.showCard();
                         } else if (tabName === 'manage') {
@@ -2284,6 +2483,7 @@
 
                 document.getElementById('pickSpeedRound').addEventListener('click', () => this.startSpeedRound());
                 document.getElementById('pickMatchGame').addEventListener('click', () => this.startMatchGame());
+                document.getElementById('pickFallingWords').addEventListener('click', () => this.startFallingWords());
 
                 document.getElementById('speedPlayAgain').addEventListener('click', () => this.startSpeedRound());
                 document.getElementById('speedBackBtn').addEventListener('click', () => this.showGamePicker());
@@ -2293,6 +2493,16 @@
                     this.stopMatchTimer();
                     this.showGamePicker();
                 });
+
+                document.getElementById('fwPlayAgain').addEventListener('click', () => this.startFallingWords());
+                document.getElementById('fwBackBtn').addEventListener('click', () => {
+                    this.fwStop();
+                    this.showGamePicker();
+                });
+                document.getElementById('fwPauseBtn').addEventListener('click', () => this.fwTogglePause());
+
+                const fwInput = document.getElementById('fwInput');
+                fwInput.addEventListener('input', () => this.fwCheckInput());
             }
 
             getGameDeck() {
@@ -2305,8 +2515,10 @@
                 document.getElementById('gamePicker').style.display = '';
                 document.getElementById('speedArena').classList.remove('active');
                 document.getElementById('matchArena').classList.remove('active');
+                document.getElementById('fwArena').classList.remove('active');
                 this.stopSpeedTimer();
                 this.stopMatchTimer();
+                this.fwStop();
             }
 
             // ── Speed Round ─────────────────────────────────────────────────
@@ -2562,6 +2774,263 @@
 
                 const newBestEl = document.getElementById('matchDoneMsg').querySelector('p');
                 if (isNew) newBestEl.textContent += ' ⭐ New best time!';
+            }
+
+            // ── Falling Words ───────────────────────────────────────────────
+
+            startFallingWords() {
+                const deck = this.getGameDeck();
+                if (!deck || deck.cards.length < 2) {
+                    alert('Please select a deck with at least 2 cards.');
+                    return;
+                }
+
+                document.getElementById('gamePicker').style.display = 'none';
+                document.getElementById('speedArena').classList.remove('active');
+                document.getElementById('matchArena').classList.remove('active');
+                document.getElementById('fwArena').classList.add('active');
+
+                this.fwDeck = deck.cards.map(c => ({ front: c.front, back: c.back }));
+                this.fwDeckId = deck.id;
+                this.fwScore = 0;
+                this.fwLevel = 1;
+                this.fwLives = 3;
+                this.fwCombo = 0;
+                this.fwWords = [];          // active falling word objects
+                this.fwPaused = false;
+                this.fwRunning = true;
+                this.fwLastSpawn = 0;
+                this.fwLastLevelUp = 0;
+                this.fwSpawnInterval = 3000; // ms between spawns, decreases with level
+                this.fwBaseSpeed = 0.25;     // px per frame, increases with level
+                this.fwWordIdCounter = 0;
+
+                // Clear field
+                const field = document.getElementById('fwField');
+                field.querySelectorAll('.fw-word').forEach(el => el.remove());
+                field.querySelectorAll('.fw-particle').forEach(el => el.remove());
+                field.querySelectorAll('.fw-level-banner').forEach(el => el.remove());
+
+                document.getElementById('fwGameOver').classList.remove('show');
+                document.getElementById('fwInput').value = '';
+                document.getElementById('fwInput').className = '';
+                document.getElementById('fwPauseBtn').textContent = '⏸ Pause';
+                document.getElementById('fwCombo').textContent = '';
+
+                this.fwUpdateHUD();
+
+                // Focus input
+                setTimeout(() => document.getElementById('fwInput').focus(), 100);
+
+                // Cancel any previous loop
+                if (this._fwRaf) cancelAnimationFrame(this._fwRaf);
+                this._fwLastTs = null;
+                this._fwRaf = requestAnimationFrame(ts => this.fwLoop(ts));
+            }
+
+            fwStop() {
+                this.fwRunning = false;
+                if (this._fwRaf) { cancelAnimationFrame(this._fwRaf); this._fwRaf = null; }
+            }
+
+            fwTogglePause() {
+                if (!this.fwRunning) return;
+                this.fwPaused = !this.fwPaused;
+                document.getElementById('fwPauseBtn').textContent = this.fwPaused ? '▶ Resume' : '⏸ Pause';
+                if (!this.fwPaused) {
+                    this._fwLastTs = null;
+                    this._fwRaf = requestAnimationFrame(ts => this.fwLoop(ts));
+                }
+            }
+
+            fwLoop(ts) {
+                if (!this.fwRunning || this.fwPaused) return;
+
+                const dt = this._fwLastTs ? Math.min(ts - this._fwLastTs, 50) : 16;
+                this._fwLastTs = ts;
+
+                const field = document.getElementById('fwField');
+                const fieldH = field.clientHeight;
+                const fieldW = field.clientWidth;
+                const groundY = fieldH - 4; // ground line y
+
+                const now = Date.now();
+
+                // Level up every 30s worth of score milestones
+                const newLevel = 1 + Math.floor(this.fwScore / 150);
+                if (newLevel > this.fwLevel) {
+                    this.fwLevel = newLevel;
+                    this.fwSpawnInterval = Math.max(900, 3000 - (this.fwLevel - 1) * 250);
+                    this.fwBaseSpeed  = 0.25 + (this.fwLevel - 1) * 0.06;
+                    this.fwShowLevelBanner();
+                    this.fwUpdateHUD();
+                }
+
+                // Spawn new word
+                const maxOnScreen = Math.min(1 + Math.floor(this.fwLevel / 2), 5);
+                if (this.fwWords.length < maxOnScreen && now - this.fwLastSpawn > this.fwSpawnInterval) {
+                    this.fwSpawnWord(field, fieldW);
+                    this.fwLastSpawn = now;
+                }
+
+                // Move words
+                const dead = [];
+                this.fwWords.forEach(w => {
+                    w.y += this.fwBaseSpeed * dt;
+                    w.el.style.top = w.y + 'px';
+
+                    if (w.y + w.el.offsetHeight >= groundY) {
+                        dead.push(w);
+                    }
+                });
+
+                // Process words that hit the ground
+                dead.forEach(w => {
+                    this.fwWords = this.fwWords.filter(x => x.id !== w.id);
+                    w.el.remove();
+                    this.fwLoseLife(field, w);
+                });
+
+                this._fwRaf = requestAnimationFrame(ts2 => this.fwLoop(ts2));
+            }
+
+            fwSpawnWord(field, fieldW) {
+                const card = this.fwDeck[Math.floor(Math.random() * this.fwDeck.length)];
+                const el = document.createElement('div');
+                el.className = 'fw-word';
+                el.textContent = card.front;
+                // Random x, keep fully inside field
+                const padding = 20;
+                const x = padding + Math.random() * Math.max(0, fieldW - 160 - padding * 2);
+                el.style.left = x + 'px';
+                el.style.top = '-50px';
+                field.appendChild(el);
+
+                const id = ++this.fwWordIdCounter;
+                this.fwWords.push({ id, el, card, y: -50 });
+            }
+
+            fwCheckInput() {
+                const input = document.getElementById('fwInput');
+                const typed = input.value.trim().toLowerCase();
+                if (!typed) return;
+
+                // Find first matching word (case-insensitive, trimmed)
+                const match = this.fwWords.find(w => w.card.back.trim().toLowerCase() === typed);
+                if (match) {
+                    this.fwWords = this.fwWords.filter(x => x.id !== match.id);
+                    this.fwCombo++;
+                    const pts = 10 * this.fwLevel * (this.fwCombo >= 3 ? 2 : 1);
+                    this.fwScore += pts;
+                    this.fwUpdateHUD();
+                    this.fwExplode(match.el);
+                    this.fwShowCombo();
+                    input.value = '';
+                    input.className = 'fw-hit';
+                    setTimeout(() => { input.className = ''; }, 300);
+                } else {
+                    // partial match highlight — highlight targeted word
+                    this.fwWords.forEach(w => {
+                        const back = w.card.back.trim().toLowerCase();
+                        w.el.classList.toggle('targeted', back.startsWith(typed));
+                    });
+                }
+            }
+
+            fwLoseLife(field, word) {
+                this.fwCombo = 0;
+                this.fwLives--;
+                this.fwUpdateHUD();
+                document.getElementById('fwCombo').textContent = '';
+
+                // Flash input red
+                const input = document.getElementById('fwInput');
+                input.className = 'fw-miss';
+                setTimeout(() => { input.className = ''; }, 400);
+
+                // Flash field border
+                field.style.boxShadow = '0 0 0 3px #dc3545';
+                setTimeout(() => { field.style.boxShadow = ''; }, 400);
+
+                if (this.fwLives <= 0) {
+                    this.fwRunning = false;
+                    cancelAnimationFrame(this._fwRaf);
+                    this._fwRaf = null;
+                    this.fwEndGame();
+                }
+            }
+
+            fwExplode(el) {
+                const field = document.getElementById('fwField');
+                const rect = el.getBoundingClientRect();
+                const fieldRect = field.getBoundingClientRect();
+                const cx = rect.left - fieldRect.left + rect.width / 2;
+                const cy = rect.top  - fieldRect.top  + rect.height / 2;
+
+                el.classList.add('exploding');
+                setTimeout(() => el.remove(), 400);
+
+                const colors = ['#ffc107','#28a745','#17a2b8','#E34234','#ffffff'];
+                for (let i = 0; i < 10; i++) {
+                    const p = document.createElement('div');
+                    p.className = 'fw-particle';
+                    p.style.left = cx + 'px';
+                    p.style.top  = cy + 'px';
+                    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist  = 30 + Math.random() * 50;
+                    p.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+                    p.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+                    field.appendChild(p);
+                    setTimeout(() => p.remove(), 650);
+                }
+            }
+
+            fwShowCombo() {
+                const el = document.getElementById('fwCombo');
+                if (this.fwCombo >= 3) {
+                    el.textContent = `${this.fwCombo}x COMBO! 🔥`;
+                } else {
+                    el.textContent = '';
+                }
+            }
+
+            fwShowLevelBanner() {
+                const field = document.getElementById('fwField');
+                const el = document.createElement('div');
+                el.className = 'fw-level-banner';
+                el.textContent = `LEVEL ${this.fwLevel}`;
+                field.appendChild(el);
+                setTimeout(() => el.remove(), 1300);
+            }
+
+            fwUpdateHUD() {
+                document.getElementById('fwScore').textContent = this.fwScore;
+                document.getElementById('fwLevel').textContent = this.fwLevel;
+                const hearts = ['', '❤️', '❤️❤️', '❤️❤️❤️'];
+                document.getElementById('fwLives').textContent = hearts[Math.max(0, this.fwLives)] || '';
+
+                const key = `fwHigh_${this.fwDeckId}`;
+                const best = parseInt(localStorage.getItem(key)) || 0;
+                document.getElementById('fwHigh').textContent = best || '—';
+            }
+
+            fwEndGame() {
+                // Remove remaining words
+                const field = document.getElementById('fwField');
+                this.fwWords.forEach(w => w.el.remove());
+                this.fwWords = [];
+
+                const key = `fwHigh_${this.fwDeckId}`;
+                const prev = parseInt(localStorage.getItem(key)) || 0;
+                const isNew = this.fwScore > prev;
+                if (isNew) localStorage.setItem(key, this.fwScore);
+
+                document.getElementById('fwFinalScore').textContent = this.fwScore;
+                document.getElementById('fwNewBest').textContent = isNew ? '⭐ New high score!' : `Best: ${Math.max(prev, this.fwScore)}`;
+                document.getElementById('fwOverDetail').textContent = `Level ${this.fwLevel} reached`;
+                document.getElementById('fwHigh').textContent = Math.max(this.fwScore, prev);
+                document.getElementById('fwGameOver').classList.add('show');
             }
 
             // ── Stats Dashboard ─────────────────────────────────────────────
