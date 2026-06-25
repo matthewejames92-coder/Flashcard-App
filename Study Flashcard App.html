@@ -1010,6 +1010,114 @@
             .speed-options { grid-template-columns: 1fr; }
             #fwField { height: 280px; }
         }
+
+        /* ── Vocab Chess ─────────────────────────────────────────── */
+        .vc-arena { display: none; position: relative; }
+        .vc-arena.active { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+        .vc-hud {
+            display: flex; align-items: center; justify-content: space-between;
+            width: min(496px, 98vw); gap: 10px;
+        }
+        .vc-status { font-weight: 700; font-size: 1rem; color: #333; }
+
+        .vc-legend {
+            font-size: 0.8rem; color: #555;
+            display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+        }
+        .vc-legend span { display: inline-flex; align-items: center; gap: 4px; }
+
+        .vc-board {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            width: min(496px, 98vw);
+            height: min(496px, 98vw);
+            border: 3px solid #5a4a2a;
+            border-radius: 4px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .vc-cell {
+            display: flex; align-items: center; justify-content: center;
+            position: relative; cursor: pointer; user-select: none;
+            overflow: hidden;
+        }
+        .vc-cell.light { background: #f0d9b5; }
+        .vc-cell.dark  { background: #b58863; }
+
+        .vc-cell.valid-move::after {
+            content: ''; position: absolute;
+            width: 32%; height: 32%; border-radius: 50%;
+            background: rgba(0,0,0,0.22); pointer-events: none;
+        }
+        .vc-cell.valid-capture { outline: 3px inset rgba(0,0,0,0.35); }
+        .vc-cell.selected { box-shadow: inset 0 0 0 3px #f6f669; }
+        .vc-cell.last-move { background: rgba(246,246,105,0.45); }
+
+        .vc-piece {
+            width: 90%; height: 90%;
+            border-radius: 6px; padding: 2px;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            position: relative; box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+        }
+        .vc-piece.white { background: #fffde8; border: 1.5px solid #c8a060; color: #2a1a00; }
+        .vc-piece.black { background: #263a18; border: 1.5px solid #141f0c; color: #ddf0c8; }
+        .vc-piece-sym {
+            position: absolute; top: 1px; right: 2px;
+            font-size: 0.48em; opacity: 0.55; line-height: 1;
+        }
+        .vc-piece-word {
+            font-size: 0.46em; font-weight: 700; text-align: center;
+            line-height: 1.15; max-width: 92%; word-break: break-word;
+            display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .vc-quiz-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.55); z-index: 200;
+            align-items: center; justify-content: center;
+        }
+        .vc-quiz-overlay.show { display: flex; }
+        .vc-quiz-modal {
+            background: white; border-radius: 16px;
+            padding: 28px 24px; max-width: 370px; width: 92%; text-align: center;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+        }
+        .vc-quiz-prompt { margin-bottom: 20px; }
+        .vc-quiz-word { font-size: 1.7rem; font-weight: 800; color: #333; }
+        .vc-quiz-sub  { font-size: 0.82rem; color: #666; margin-bottom: 6px; }
+        .vc-quiz-options {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+        }
+        .vc-quiz-opt {
+            padding: 12px 8px; border: 2px solid #ddd; border-radius: 10px;
+            background: white; cursor: pointer; font-size: 0.92rem; font-weight: 600;
+            transition: all 0.15s;
+        }
+        .vc-quiz-opt:hover:not(:disabled) { border-color: #718652; background: #f0f4eb; }
+        .vc-quiz-opt.correct { border-color: #28a745; background: #d4edda; }
+        .vc-quiz-opt.wrong   { border-color: #dc3545; background: #f8d7da; }
+
+        .vc-gameover {
+            display: none; position: absolute; inset: 0;
+            background: rgba(0,0,0,0.65);
+            align-items: center; justify-content: center; z-index: 100;
+            border-radius: 4px;
+        }
+        .vc-gameover.show { display: flex; }
+        .vc-gameover-inner {
+            background: white; border-radius: 16px; padding: 32px 24px;
+            text-align: center; max-width: 320px;
+        }
+
+        @media (max-width: 520px) {
+            .vc-piece-word { font-size: 0.38em; }
+            .vc-piece-sym  { font-size: 0.4em; }
+        }
     </style>
 </head>
 <body>
@@ -1253,6 +1361,11 @@
                         <h3>Falling Words</h3>
                         <p>Words rain down — type the translation before they hit the ground. Survive as long as you can!</p>
                     </div>
+                    <div class="game-card" id="pickVocabChess">
+                        <div class="game-icon">♟</div>
+                        <h3>Vocab Chess</h3>
+                        <p>Chess where each piece is a vocabulary word. Only the translation counterpart can capture a piece!</p>
+                    </div>
                 </div>
 
                 <!-- Speed Round Arena -->
@@ -1354,6 +1467,35 @@
                         <p style="color:#666; margin:8px 0;" id="matchDoneDetail"></p>
                         <button class="btn btn-primary" id="matchPlayAgain" style="margin-top:16px;">Play Again</button>
                         <button class="btn btn-secondary" id="matchBackBtn" style="margin-top:16px;">← Back to Games</button>
+                    </div>
+                </div>
+
+                <!-- Vocab Chess Arena -->
+                <div class="vc-arena" id="vcArena">
+                    <div class="vc-hud">
+                        <div id="vcStatus" class="vc-status">Your turn</div>
+                        <div class="vc-hud-right">
+                            <button class="btn btn-secondary" id="vcBackBtn" style="padding:8px 14px;">← Back</button>
+                        </div>
+                    </div>
+                    <div class="vc-legend" id="vcLegend"></div>
+                    <div id="vcBoard" class="vc-board"></div>
+                    <!-- Quiz overlay -->
+                    <div class="vc-quiz-overlay" id="vcQuizOverlay">
+                        <div class="vc-quiz-modal">
+                            <div id="vcQuizPrompt" class="vc-quiz-prompt"></div>
+                            <div id="vcQuizOptions" class="vc-quiz-options"></div>
+                        </div>
+                    </div>
+                    <!-- Game Over -->
+                    <div class="vc-gameover" id="vcGameOver">
+                        <div class="vc-gameover-inner">
+                            <div id="vcGameOverMsg" style="font-size:1.4rem;font-weight:700;margin-bottom:20px;"></div>
+                            <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+                                <button class="btn btn-primary" id="vcPlayAgain">Play Again</button>
+                                <button class="btn btn-secondary" id="vcBackBtn2">← Back to Games</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2527,6 +2669,10 @@
                 document.getElementById('pickSpeedRound').addEventListener('click', () => this.startSpeedRound());
                 document.getElementById('pickMatchGame').addEventListener('click', () => this.startMatchGame());
                 document.getElementById('pickFallingWords').addEventListener('click', () => this.startFallingWords());
+                document.getElementById('pickVocabChess').addEventListener('click', () => this.startVocabChess());
+                document.getElementById('vcBackBtn').addEventListener('click', () => this.showGamePicker());
+                document.getElementById('vcBackBtn2').addEventListener('click', () => this.showGamePicker());
+                document.getElementById('vcPlayAgain').addEventListener('click', () => this.startVocabChess());
 
                 document.getElementById('speedPlayAgain').addEventListener('click', () => this.startSpeedRound());
                 document.getElementById('speedBackBtn').addEventListener('click', () => this.showGamePicker());
@@ -2559,6 +2705,7 @@
                 document.getElementById('speedArena').classList.remove('active');
                 document.getElementById('matchArena').classList.remove('active');
                 document.getElementById('fwArena').classList.remove('active');
+                document.getElementById('vcArena').classList.remove('active');
                 this.stopSpeedTimer();
                 this.stopMatchTimer();
                 this.fwStop();
@@ -3197,6 +3344,261 @@
                 document.getElementById('fwOverDetail').textContent = `Level ${this.fwLevel} reached`;
                 document.getElementById('fwHigh').textContent = Math.max(this.fwScore, prev);
                 document.getElementById('fwGameOver').classList.add('show');
+            }
+
+            // ── Vocab Chess ──────────────────────────────────────────────────
+
+            startVocabChess() {
+                const deck = this.getGameDeck();
+                if (!deck || deck.cards.length < 6) {
+                    alert('Please select a deck with at least 6 cards.');
+                    return;
+                }
+                document.getElementById('gamePicker').style.display = 'none';
+                document.getElementById('speedArena').classList.remove('active');
+                document.getElementById('matchArena').classList.remove('active');
+                document.getElementById('fwArena').classList.remove('active');
+                document.getElementById('vcArena').classList.add('active');
+                document.getElementById('vcGameOver').classList.remove('show');
+                document.getElementById('vcQuizOverlay').classList.remove('show');
+
+                // Assign one word pair per piece type (6 types)
+                const shuffled = [...deck.cards].sort(() => Math.random() - 0.5);
+                this.vcPairs = shuffled.slice(0, Math.max(6, Math.min(20, shuffled.length)));
+                const p = this.vcPairs;
+                this.vcPairMap = {
+                    king: p[0], queen: p[1], rook: p[2],
+                    bishop: p[3], knight: p[4], pawn: p[5]
+                };
+                this.vcBoard = this.vcInitBoard();
+                this.vcSelected = null;
+                this.vcMoves = [];
+                this.vcTurn = 'white';
+                this.vcDone = false;
+
+                // Legend
+                const leg = document.getElementById('vcLegend');
+                leg.innerHTML = `<span>⬜ You (white) — <em>${p[0].front}</em> side</span><span>⬛ AI (black) — <em>${p[0].back}</em> side</span><span style="color:#888">Only the same piece type can capture its counterpart</span>`;
+
+                this.vcRender();
+                this.vcSetStatus('Your turn — click a white piece');
+            }
+
+            vcInitBoard() {
+                const b = Array.from({length:8}, () => Array(8).fill(null));
+                const order = ['rook','knight','bishop','queen','king','bishop','knight','rook'];
+                order.forEach((type, col) => {
+                    b[0][col] = { type, color:'black', pair:this.vcPairMap[type] };
+                    b[7][col] = { type, color:'white', pair:this.vcPairMap[type] };
+                });
+                for (let c = 0; c < 8; c++) {
+                    b[1][c] = { type:'pawn', color:'black', pair:this.vcPairMap.pawn };
+                    b[6][c] = { type:'pawn', color:'white', pair:this.vcPairMap.pawn };
+                }
+                return b;
+            }
+
+            vcSym(type, color) {
+                const s = { king:['♔','♚'], queen:['♕','♛'], rook:['♖','♜'], bishop:['♗','♝'], knight:['♘','♞'], pawn:['♙','♟'] };
+                return s[type][color==='white'?0:1];
+            }
+
+            vcRender() {
+                const el = document.getElementById('vcBoard');
+                el.innerHTML = '';
+                for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'vc-cell ' + ((r+c)%2===0 ? 'light' : 'dark');
+                    const isSel = this.vcSelected && this.vcSelected[0]===r && this.vcSelected[1]===c;
+                    if (isSel) cell.classList.add('selected');
+                    const isMove = this.vcMoves.some(([mr,mc]) => mr===r && mc===c);
+                    if (isMove) cell.classList.add(this.vcBoard[r][c] ? 'valid-capture' : 'valid-move');
+                    const piece = this.vcBoard[r][c];
+                    if (piece) {
+                        const word = piece.color==='white' ? piece.pair.front : piece.pair.back;
+                        const pd = document.createElement('div');
+                        pd.className = 'vc-piece ' + piece.color;
+                        pd.innerHTML = `<span class="vc-piece-sym">${this.vcSym(piece.type, piece.color)}</span><span class="vc-piece-word">${word}</span>`;
+                        cell.appendChild(pd);
+                    }
+                    cell.addEventListener('click', () => this.vcClick(r, c));
+                    el.appendChild(cell);
+                }
+            }
+
+            vcGetMoves(row, col) {
+                const piece = this.vcBoard[row][col];
+                if (!piece) return [];
+                const { type, color } = piece;
+                const moves = [];
+
+                const slide = (dr, dc) => {
+                    let r = row+dr, c = col+dc;
+                    while (r>=0 && r<8 && c>=0 && c<8) {
+                        const t = this.vcBoard[r][c];
+                        if (t) {
+                            // Can only capture own-type counterpart
+                            if (t.color !== color && t.type === type) moves.push([r, c]);
+                            break;
+                        }
+                        moves.push([r, c]);
+                        r+=dr; c+=dc;
+                    }
+                };
+                const step = (dr, dc) => {
+                    const r=row+dr, c=col+dc;
+                    if (r<0||r>7||c<0||c>7) return;
+                    const t = this.vcBoard[r][c];
+                    if (!t) moves.push([r, c]);
+                    else if (t.color !== color && t.type === type) moves.push([r, c]);
+                };
+
+                if (type === 'pawn') {
+                    const d = color==='white' ? -1 : 1;
+                    const start = color==='white' ? 6 : 1;
+                    if (row+d>=0 && row+d<8 && !this.vcBoard[row+d][col]) {
+                        moves.push([row+d, col]);
+                        if (row===start && !this.vcBoard[row+2*d]?.[col]) moves.push([row+2*d, col]);
+                    }
+                    [-1,1].forEach(dc => {
+                        const nr=row+d, nc=col+dc;
+                        if (nr>=0&&nr<8&&nc>=0&&nc<8) {
+                            const t = this.vcBoard[nr][nc];
+                            if (t && t.color!==color && t.type==='pawn') moves.push([nr, nc]);
+                        }
+                    });
+                } else if (type === 'knight') {
+                    [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(([dr,dc]) => step(dr,dc));
+                } else if (type === 'king') {
+                    for (let dr=-1;dr<=1;dr++) for (let dc=-1;dc<=1;dc++) if (dr||dc) step(dr,dc);
+                } else {
+                    if (type==='rook'||type==='queen') [[0,1],[0,-1],[1,0],[-1,0]].forEach(([dr,dc])=>slide(dr,dc));
+                    if (type==='bishop'||type==='queen') [[1,1],[1,-1],[-1,1],[-1,-1]].forEach(([dr,dc])=>slide(dr,dc));
+                }
+                return moves;
+            }
+
+            vcClick(r, c) {
+                if (this.vcDone || this.vcTurn !== 'white') return;
+                const piece = this.vcBoard[r][c];
+                if (this.vcSelected) {
+                    const isMove = this.vcMoves.some(([mr,mc]) => mr===r && mc===c);
+                    if (isMove) {
+                        const target = this.vcBoard[r][c];
+                        if (target) {
+                            this.vcShowQuiz(this.vcSelected, [r,c]);
+                        } else {
+                            this.vcDoMove(this.vcSelected, [r,c]);
+                            this.vcSelected = null; this.vcMoves = [];
+                            this.vcRender();
+                            this.vcAfterPlayer();
+                        }
+                        return;
+                    }
+                }
+                if (piece && piece.color === 'white') {
+                    this.vcSelected = [r,c];
+                    this.vcMoves = this.vcGetMoves(r,c);
+                } else {
+                    this.vcSelected = null; this.vcMoves = [];
+                }
+                this.vcRender();
+            }
+
+            vcDoMove(from, to) {
+                const [fr,fc]=from, [tr,tc]=to;
+                const piece = this.vcBoard[fr][fc];
+                this.vcBoard[tr][tc] = piece;
+                this.vcBoard[fr][fc] = null;
+                // Pawn promotion → queen
+                if (piece.type==='pawn' && (piece.color==='white'?tr===0:tr===7)) {
+                    piece.type = 'queen';
+                }
+            }
+
+            vcShowQuiz(from, to) {
+                const attacker = this.vcBoard[from[0]][from[1]];
+                const defender = this.vcBoard[to[0]][to[1]];
+                // Player is white: their word is front, must identify the back (translation)
+                const question = attacker.pair.front;
+                const correct  = attacker.pair.back;
+
+                const pool = [...new Set(
+                    this.vcPairs.map(p => p.back).filter(w => w !== correct)
+                )].sort(() => Math.random()-0.5).slice(0,3);
+                while (pool.length < 3) pool.push('—');
+                const opts = [...pool, correct].sort(() => Math.random()-0.5);
+
+                const overlay = document.getElementById('vcQuizOverlay');
+                document.getElementById('vcQuizPrompt').innerHTML =
+                    `<div class="vc-quiz-sub">Translate to capture the ${defender.type}:</div>
+                     <div class="vc-quiz-word">${question}</div>`;
+                const optEl = document.getElementById('vcQuizOptions');
+                optEl.innerHTML = '';
+                opts.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.className = 'vc-quiz-opt';
+                    btn.textContent = opt;
+                    btn.addEventListener('click', () => {
+                        const ok = opt === correct;
+                        btn.classList.add(ok ? 'correct' : 'wrong');
+                        optEl.querySelectorAll('.vc-quiz-opt').forEach(b => { b.disabled = true; });
+                        if (!ok) optEl.querySelectorAll('.vc-quiz-opt').forEach(b => { if (b.textContent===correct) b.classList.add('correct'); });
+                        setTimeout(() => {
+                            overlay.classList.remove('show');
+                            if (ok) {
+                                const wasKing = defender.type === 'king';
+                                this.vcDoMove(from, to);
+                                this.vcSelected = null; this.vcMoves = [];
+                                this.vcRender();
+                                if (wasKing) { this.vcEnd('You win! 🎉 The king has fallen!'); return; }
+                                this.vcAfterPlayer();
+                            } else {
+                                this.vcSelected = null; this.vcMoves = [];
+                                this.vcRender();
+                                this.vcSetStatus('Wrong! The capture was blocked. Your turn.');
+                            }
+                        }, 700);
+                    });
+                    optEl.appendChild(btn);
+                });
+                overlay.classList.add('show');
+            }
+
+            vcAfterPlayer() {
+                this.vcTurn = 'black';
+                this.vcSetStatus('AI is thinking…');
+                setTimeout(() => this.vcAiMove(), 500);
+            }
+
+            vcAiMove() {
+                const all = [];
+                for (let r=0;r<8;r++) for (let c=0;c<8;c++) {
+                    const p = this.vcBoard[r][c];
+                    if (p && p.color==='black') {
+                        this.vcGetMoves(r,c).forEach(to => all.push({from:[r,c],to}));
+                    }
+                }
+                if (!all.length) { this.vcEnd("Stalemate — AI has no moves! You win!"); return; }
+
+                const captures = all.filter(m => this.vcBoard[m.to[0]][m.to[1]]);
+                const kingCap = captures.find(m => this.vcBoard[m.to[0]][m.to[1]]?.type==='king');
+                let move = kingCap || (captures.length ? captures[Math.floor(Math.random()*captures.length)] : all[Math.floor(Math.random()*all.length)]);
+
+                const defender = this.vcBoard[move.to[0]][move.to[1]];
+                this.vcDoMove(move.from, move.to);
+                this.vcRender();
+                if (defender?.type==='king') { this.vcEnd('AI wins! Your king was captured.'); return; }
+                this.vcTurn = 'white';
+                this.vcSetStatus('Your turn');
+            }
+
+            vcSetStatus(msg) { document.getElementById('vcStatus').textContent = msg; }
+
+            vcEnd(msg) {
+                this.vcDone = true;
+                document.getElementById('vcGameOverMsg').textContent = msg;
+                document.getElementById('vcGameOver').classList.add('show');
             }
 
             // ── Stats Dashboard ─────────────────────────────────────────────
