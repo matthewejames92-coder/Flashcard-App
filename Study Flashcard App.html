@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcard Study App</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #718652 0%, #8a9f66 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .tab:hover {
+            color: #E34234;
+        }
+
+        .tab.active {
+            color: #E34234;
+            border-bottom-color: #E34234;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Import Section */
+        .import-section {
+            margin-bottom: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 2px dashed #718652;
+        }
+
+        .import-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .drop-zone {
+            padding: 40px;
+            text-align: center;
+            background: white;
+            border: 3px dashed #ccc;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+        }
+
+        .drop-zone:hover,
+        .drop-zone.dragover {
+            border-color: #E34234;
+            background: #fef5f4;
+        }
+
+        .drop-zone-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .drop-zone-text {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .drop-zone-subtext {
+            font-size: 0.9rem;
+            color: #999;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .import-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #1976d2;
+        }
+
+        .import-status {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .import-status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .import-status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* Create Cards Section */
+        .card-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        input, textarea {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #E34234;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #E34234;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #D73833;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(227, 66, 52, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-danger {
+            background: #E34234;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #C93A2E;
+        }
+
+        /* Flashcard */
+        .flashcard-container {
+            perspective: 1000px;
+            margin-bottom: 30px;
+        }
+
+        .flashcard {
+            width: 100%;
+            height: 400px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            cursor: pointer;
+        }
+
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, #718652 0%, #8a9f66 100%);
+            color: white;
+        }
+
+        .card-back {
+            background: linear-gradient(135deg, #E34234 0%, #D73833 100%);
+            color: white;
+            transform: rotateY(180deg);
+        }
+
+        .card-text {
+            font-size: 4.5rem;
+            text-align: center;
+            word-wrap: break-word;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .progress {
+            text-align: center;
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        /* Card List */
+        .card-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .card-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .card-content {
+            flex: 1;
+        }
+
+        .card-item strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #E34234;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        /* Quiz Mode */
+        .quiz-question {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .quiz-question h3 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .quiz-options {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .quiz-option {
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+        }
+
+        .quiz-option:hover {
+            border-color: #E34234;
+            background: #fef5f4;
+        }
+
+        .quiz-option.correct {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .quiz-option.incorrect {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .quiz-score {
+            text-align: center;
+            font-size: 1.5rem;
+            color: #E34234;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .card-text {
+                font-size: 3.5rem;
+            }
+
+            .flashcard {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 Flashcard Study App</h1>
+            <p class="subtitle">Master your vocabulary with interactive flashcards</p>
+        </header>
+
+        <div class="main-content">
+            <div class="tabs">
+                <button class="tab active" data-tab="create">Create Cards</button>
+                <button class="tab" data-tab="study">Study Mode</button>
+                <button class="tab" data-tab="quiz">Quiz Mode</button>
+                <button class="tab" data-tab="manage">Manage Cards</button>
+            </div>
+
+            <!-- Create Cards Tab -->
+            <div class="tab-content active" id="create">
+                <div class="import-section">
+                    <h3>📥 Import Cards from Excel</h3>
+                    <div class="drop-zone" id="dropZone">
+                        <div class="drop-zone-icon">📄</div>
+                        <div class="drop-zone-text">Drag and drop your Excel file here</div>
+                        <div class="drop-zone-subtext">or click to browse</div>
+                    </div>
+                    <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls">
+                    <div class="import-info">
+                        <strong>📋 Format:</strong> Column A = Front of card (e.g., Spanish), Column B = Back of card (e.g., English)<br>
+                        <strong>✓ Smart Skip:</strong> Rows with "Y" in Column C will be skipped (already learned)
+                    </div>
+                    <div class="import-status" id="importStatus"></div>
+                    <div id="exportSection" style="display: none; margin-top: 15px; padding: 15px; background: #e8f5e9; border-radius: 8px;">
+                        <button class="btn btn-primary" id="exportBtn" style="width: 100%;">
+                            📤 Export Updated Excel File
+                        </button>
+                        <div style="margin-top: 10px; font-size: 0.9rem; color: #2e7d32;">
+                            <strong>Note:</strong> This will add deck numbers to Column D
+                        </div>
+                    </div>
+                </div>
+
+                <h2 style="margin-bottom: 20px;">Create New Card</h2>
+                <form class="card-form" id="cardForm">
+                    <div class="form-group">
+                        <label for="front">Front of Card</label>
+                        <input type="text" id="front" placeholder="e.g., Hello" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="back">Back of Card</label>
+                        <textarea id="back" placeholder="e.g., Hola" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Card</button>
+                </form>
+            </div>
+
+            <!-- Study Mode Tab -->
+            <div class="tab-content" id="study">
+                <div style="margin-bottom: 20px;">
+                    <label for="deckSelector" style="font-weight: 600; display: block; margin-bottom: 8px;">Select Deck:</label>
+                    <select id="deckSelector" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+                        <option value="">-- Select a deck --</option>
+                    </select>
+                </div>
+                <div style="display: flex; justify-content: center; gap: 15px; margin-bottom: 15px;">
+                    <button class="btn btn-secondary" id="reverseDeckBtn">🔄 Reverse Deck</button>
+                </div>
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <div id="deckMode" style="font-size: 1rem; color: #E34234; margin-bottom: 10px; font-weight: 600;">Front → Back</div>
+                    <div id="currentTimer" style="font-size: 2rem; font-weight: bold; color: #E34234; margin-bottom: 5px;">00:00</div>
+                    <div style="display: flex; justify-content: center; gap: 30px; font-size: 0.9rem; color: #666;">
+                        <div id="bestTimeFront"></div>
+                        <div id="bestTimeBack"></div>
+                    </div>
+                </div>
+                <div class="progress" id="studyProgress"></div>
+                <div class="flashcard-container">
+                    <div class="flashcard" id="flashcard">
+                        <div class="card-face card-front">
+                            <div class="card-text" id="cardFront"></div>
+                        </div>
+                        <div class="card-face card-back">
+                            <div class="card-text" id="cardBack"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="controls">
+                    <button class="btn btn-secondary" id="prevCard">← Previous</button>
+                    <button class="btn btn-primary" id="flipCard">Flip Card</button>
+                    <button class="btn btn-secondary" id="nextCard">Next →</button>
+                    <button class="btn btn-secondary" id="toggleTimer">⏸️ Pause Timer</button>
+                    <button class="btn btn-danger" id="recycleCard">♻️ Recycle (Don't Know)</button>
+                </div>
+            </div>
+
+            <!-- Quiz Mode Tab -->
+            <div class="tab-content" id="quiz">
+                <div style="margin-bottom: 20px;">
+                    <label for="quizDeckSelector" style="font-weight: 600; display: block; margin-bottom: 8px;">Select Deck:</label>
+                    <select id="quizDeckSelector" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+                        <option value="">-- Select a deck --</option>
+                    </select>
+                </div>
+                <div class="quiz-score" id="quizScore"></div>
+                <div class="quiz-question" id="quizQuestion"></div>
+                <div class="quiz-options" id="quizOptions"></div>
+                <div class="controls">
+                    <button class="btn btn-primary" id="startQuiz">Start Quiz</button>
+                    <button class="btn btn-secondary" id="nextQuizCard" style="display: none;">Next Question</button>
+                </div>
+            </div>
+
+            <!-- Manage Cards Tab -->
+            <div class="tab-content" id="manage">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>Your Decks (<span id="cardCount">0</span>)</h2>
+                    <button class="btn btn-danger" id="clearAll">Clear All Decks</button>
+                </div>
+                <div class="card-list" id="cardList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Flashcard App
+        class FlashcardApp {
+            constructor() {
+                this.cards = JSON.parse(localStorage.getItem('flashcards')) || [];
+                this.decks = JSON.parse(localStorage.getItem('flashcardDecks')) || [];
+                this.currentDeck = null;
+                this.currentIndex = 0;
+                this.isFlipped = false;
+                this.isDeckReversed = false;
+                this.quizMode = false;
+                this.quizScore = 0;
+                this.quizTotal = 0;
+                this.originalFileData = null;
+                this.originalFileName = null;
+                this.timerInterval = null;
+                this.timerStartTime = null;
+                this.currentElapsedTime = 0;
+                this.timerPaused = false;
+                this.pausedElapsedTime = 0;
+                this.cardsCompletedThisRun = new Set();
+                this.init();
+            }
+
+            init() {
+                this.setupTabs();
+                this.setupForm();
+                this.setupStudyMode();
+                this.setupQuizMode();
+                this.setupManageMode();
+                this.setupImport();
+                this.setupDeckSelector();
+                this.setupExport();
+                this.updateCardCount();
+            }
+
+            setupImport() {
+                const dropZone = document.getElementById('dropZone');
+                const fileInput = document.getElementById('fileInput');
+                const importStatus = document.getElementById('importStatus');
+
+                // Click to open file dialog
+                dropZone.addEventListener('click', () => fileInput.click());
+
+                // Drag and drop handlers
+                dropZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add('dragover');
+                });
+
+                dropZone.addEventListener('dragleave', () => {
+                    dropZone.classList.remove('dragover');
+                });
+
+                dropZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('dragover');
+                    const file = e.dataTransfer.files[0];
+                    if (file) {
+                        this.handleFile(file, importStatus);
+                    }
+                });
+
+                // File input change
+                fileInput.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        this.handleFile(file, importStatus);
+                    }
+                });
+            }
+
+            setupDeckSelector() {
+                const deckSelector = document.getElementById('deckSelector');
+                const quizDeckSelector = document.getElementById('quizDeckSelector');
+
+                deckSelector.addEventListener('change', (e) => {
+                    const deckId = parseInt(e.target.value);
+                    this.selectDeck(deckId);
+                });
+
+                quizDeckSelector.addEventListener('change', (e) => {
+                    const deckId = parseInt(e.target.value);
+                    this.selectDeck(deckId);
+                });
+
+                this.renderDeckSelector();
+            }
+
+            renderDeckSelector() {
+                const deckSelector = document.getElementById('deckSelector');
+                const quizDeckSelector = document.getElementById('quizDeckSelector');
+
+                const options = this.decks.map(deck => 
+                    `<option value="${deck.id}">${deck.name}</option>`
+                ).join('');
+
+                deckSelector.innerHTML = `<option value="">-- Select a deck --</option>${options}`;
+                quizDeckSelector.innerHTML = `<option value="">-- Select a deck --</option>${options}`;
+
+                // If there's only one deck, select it automatically
+                if (this.decks.length === 1) {
+                    deckSelector.value = this.decks[0].id;
+                    quizDeckSelector.value = this.decks[0].id;
+                    this.selectDeck(this.decks[0].id);
+                }
+            }
+
+            selectDeck(deckId) {
+                const deck = this.decks.find(d => d.id === deckId);
+                if (deck) {
+                    this.currentDeck = deck;
+                    this.cards = [...deck.cards];
+                    this.currentIndex = 0;
+                    this.isFlipped = false;
+                    this.cardsCompletedThisRun = new Set();
+                    document.getElementById('flashcard').classList.remove('flipped');
+                    this.showCard();
+                    this.updateCardCount();
+                    this.startTimer();
+                    this.displayBestTime();
+                } else {
+                    this.currentDeck = null;
+                    this.cards = [];
+                    this.stopTimer();
+                    this.showCard();
+                }
+            }
+
+            saveDecks() {
+                localStorage.setItem('flashcardDecks', JSON.stringify(this.decks));
+            }
+
+            setupExport() {
+                document.getElementById('exportBtn').addEventListener('click', () => {
+                    this.exportToExcel();
+                });
+            }
+
+            exportToExcel() {
+                if (!this.originalFileData || !this.originalFileName) {
+                    alert('No file data to export. Please import a file first.');
+                    return;
+                }
+
+                // Create a copy of the original data
+                const exportData = this.originalFileData.map(row => [...row]);
+
+                // Create maps for deck data
+                const cardToDeckMap = new Map();
+                const deckFrontTimes = new Map();
+                const deckBackTimes = new Map();
+                
+                this.decks.forEach(deck => {
+                    if (deck.deckNumber) {
+                        if (deck.bestTimeFront) {
+                            deckFrontTimes.set(deck.deckNumber, deck.bestTimeFront);
+                        }
+                        if (deck.bestTimeBack) {
+                            deckBackTimes.set(deck.deckNumber, deck.bestTimeBack);
+                        }
+                        deck.cards.forEach(card => {
+                            cardToDeckMap.set(card.front, deck.deckNumber);
+                        });
+                    }
+                });
+
+                // Update Column D with deck numbers, Column E with front best times, Column F with back best times
+                exportData.forEach((row, index) => {
+                    if (index === 0) {
+                        // Header row
+                        if (!row[3]) row[3] = 'Deck';
+                        if (!row[4]) row[4] = 'Best Time (Front)';
+                        if (!row[5]) row[5] = 'Best Time (Back)';
+                        return;
+                    }
+
+                    const front = row[0];
+                    if (front && cardToDeckMap.has(String(front).trim())) {
+                        const deckNum = cardToDeckMap.get(String(front).trim());
+                        row[3] = deckNum;
+                        
+                        // Add front best time if it exists for this deck
+                        if (deckFrontTimes.has(deckNum)) {
+                            const seconds = deckFrontTimes.get(deckNum);
+                            const mins = Math.floor(seconds / 60);
+                            const secs = seconds % 60;
+                            row[4] = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                        }
+                        
+                        // Add back best time if it exists for this deck
+                        if (deckBackTimes.has(deckNum)) {
+                            const seconds = deckBackTimes.get(deckNum);
+                            const mins = Math.floor(seconds / 60);
+                            const secs = seconds % 60;
+                            row[5] = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                        }
+                    }
+                });
+
+                // Create workbook and worksheet
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(exportData);
+
+                // Set column widths
+                ws['!cols'] = [
+                    { wch: 25 },  // Column A
+                    { wch: 30 },  // Column B
+                    { wch: 10 },  // Column C
+                    { wch: 10 },  // Column D
+                    { wch: 16 },  // Column E
+                    { wch: 16 }   // Column F
+                ];
+
+                XLSX.utils.book_append_sheet(wb, ws, 'Vocabulary');
+
+                // Use exact same filename as received
+                const fileName = this.originalFileName;
+
+                // Export file
+                XLSX.writeFile(wb, fileName);
+
+                alert(`✓ File exported as "${fileName}"\n\nColumn D: Deck numbers\nColumn E: Best times (Front → Back)\nColumn F: Best times (Back → Front)\n\nRe-import this file to maintain consistent decks!`);
+            }
+
+            handleFile(file, statusElement) {
+                if (!file.name.match(/\.(xlsx|xls)$/)) {
+                    this.showImportStatus(statusElement, 'Please upload an Excel file (.xlsx or .xls)', 'error');
+                    return;
+                }
+
+                this.originalFileName = file.name;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+                        // Store original data for export
+                        this.originalFileData = jsonData;
+
+                        let importedCards = [];
+                        let skipped = 0;
+                        const deckSize = 20;
+                        const deckMap = new Map(); // Map deck numbers to cards
+
+                        jsonData.forEach((row, index) => {
+                            // Skip header row if it exists
+                            if (index === 0 && (String(row[0]).toLowerCase().includes('front') || 
+                                               String(row[0]).toLowerCase().includes('spanish') ||
+                                               String(row[0]).toLowerCase().includes('question'))) {
+                                return;
+                            }
+
+                            const front = row[0];
+                            const back = row[1];
+                            const learned = row[2]; // Column C
+                            const existingDeckNum = row[3]; // Column D - existing deck number
+
+                            // Skip if Column C contains "Y" (already learned)
+                            if (learned && String(learned).trim().toUpperCase() === 'Y') {
+                                skipped++;
+                                return;
+                            }
+
+                            if (front && back && String(front).trim() && String(back).trim()) {
+                                const card = {
+                                    id: Date.now() + importedCards.length + Math.random(),
+                                    front: String(front).trim(),
+                                    back: String(back).trim(),
+                                    originalRowIndex: index
+                                };
+
+                                // Use existing deck number if available, otherwise assign new one
+                                let deckNum;
+                                if (existingDeckNum && !isNaN(existingDeckNum)) {
+                                    deckNum = parseInt(existingDeckNum);
+                                } else {
+                                    deckNum = Math.floor(importedCards.length / deckSize) + 1;
+                                }
+
+                                if (!deckMap.has(deckNum)) {
+                                    deckMap.set(deckNum, []);
+                                }
+                                deckMap.get(deckNum).push(card);
+                                
+                                importedCards.push(card);
+                            } else {
+                                skipped++;
+                            }
+                        });
+
+                        // Create decks from the map
+                        const newDecks = [];
+                        const sortedDeckNums = Array.from(deckMap.keys()).sort((a, b) => a - b);
+                        
+                        sortedDeckNums.forEach(deckNum => {
+                            const deckCards = deckMap.get(deckNum);
+                            newDecks.push({
+                                id: Date.now() + newDecks.length,
+                                name: `Deck ${deckNum} (${deckCards.length} cards)`,
+                                deckNumber: deckNum,
+                                cards: deckCards,
+                                createdAt: new Date().toISOString()
+                            });
+                        });
+
+                        this.decks = [...this.decks, ...newDecks];
+                        this.saveDecks();
+                        this.renderDeckSelector();
+
+                        const totalDecks = newDecks.length;
+                        const totalCards = importedCards.length;
+                        let message = `✓ Successfully imported ${totalCards} cards into ${totalDecks} deck${totalDecks > 1 ? 's' : ''}!`;
+                        if (skipped > 0) {
+                            message += ` (Skipped ${skipped} rows: already learned or empty)`;
+                        }
+                        this.showImportStatus(statusElement, message, 'success');
+
+                        // Show export button
+                        document.getElementById('exportSection').style.display = 'block';
+                        const exportBtn = document.getElementById('exportBtn');
+                        exportBtn.textContent = `📤 Export ${this.originalFileName}`;
+
+                        // Reset file input
+                        document.getElementById('fileInput').value = '';
+
+                    } catch (error) {
+                        this.showImportStatus(statusElement, 'Error reading file. Please check the file format.', 'error');
+                        console.error(error);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            }
+
+            showImportStatus(element, message, type) {
+                element.textContent = message;
+                element.className = `import-status ${type}`;
+                element.style.display = 'block';
+
+                setTimeout(() => {
+                    element.style.display = 'none';
+                }, 5000);
+            }
+
+            setupTabs() {
+                const tabs = document.querySelectorAll('.tab');
+                const contents = document.querySelectorAll('.tab-content');
+
+                tabs.forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        const tabName = tab.dataset.tab;
+
+                        tabs.forEach(t => t.classList.remove('active'));
+                        contents.forEach(c => c.classList.remove('active'));
+
+                        tab.classList.add('active');
+                        document.getElementById(tabName).classList.add('active');
+
+                        if (tabName === 'study') {
+                            this.showCard();
+                        } else if (tabName === 'manage') {
+                            this.renderCardList();
+                        }
+                    });
+                });
+            }
+
+            setupForm() {
+                const form = document.getElementById('cardForm');
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const front = document.getElementById('front').value.trim();
+                    const back = document.getElementById('back').value.trim();
+
+                    if (front && back) {
+                        this.addCard(front, back);
+                        form.reset();
+                    }
+                });
+            }
+
+            addCard(front, back) {
+                const card = {
+                    id: Date.now(),
+                    front,
+                    back
+                };
+                
+                // Add to a "Manual Cards" deck
+                let manualDeck = this.decks.find(d => d.name === 'Manual Cards');
+                if (!manualDeck) {
+                    manualDeck = {
+                        id: Date.now(),
+                        name: 'Manual Cards',
+                        cards: [],
+                        createdAt: new Date().toISOString()
+                    };
+                    this.decks.push(manualDeck);
+                }
+                
+                manualDeck.cards.push(card);
+                this.saveDecks();
+                this.updateCardCount();
+                this.renderDeckSelector();
+                
+                alert('Card added to "Manual Cards" deck!');
+            }
+
+            setupStudyMode() {
+                const flashcard = document.getElementById('flashcard');
+                const flipBtn = document.getElementById('flipCard');
+                const prevBtn = document.getElementById('prevCard');
+                const nextBtn = document.getElementById('nextCard');
+                const recycleBtn = document.getElementById('recycleCard');
+                const reverseBtn = document.getElementById('reverseDeckBtn');
+                const toggleTimerBtn = document.getElementById('toggleTimer');
+
+                flashcard.addEventListener('click', () => this.flipCard());
+                flipBtn.addEventListener('click', () => this.flipCard());
+                prevBtn.addEventListener('click', () => this.navigateCard(-1));
+                nextBtn.addEventListener('click', () => this.navigateCard(1));
+                recycleBtn.addEventListener('click', () => this.recycleCard());
+                reverseBtn.addEventListener('click', () => this.reverseDeck());
+                toggleTimerBtn.addEventListener('click', () => this.toggleTimer());
+            }
+
+            flipCard() {
+                const flashcard = document.getElementById('flashcard');
+                this.isFlipped = !this.isFlipped;
+                flashcard.classList.toggle('flipped');
+            }
+
+            navigateCard(direction) {
+                if (this.cards.length === 0) return;
+
+                // Check completion before moving if going forward
+                if (direction > 0) {
+                    this.checkDeckCompletion();
+                }
+
+                this.currentIndex += direction;
+                if (this.currentIndex < 0) this.currentIndex = this.cards.length - 1;
+                if (this.currentIndex >= this.cards.length) this.currentIndex = 0;
+
+                this.isFlipped = false;
+                document.getElementById('flashcard').classList.remove('flipped');
+                this.showCard();
+            }
+
+            showCard() {
+                if (this.decks.length === 0) {
+                    document.getElementById('cardFront').textContent = 'No decks available';
+                    document.getElementById('cardBack').textContent = 'Import an Excel file to create decks!';
+                    document.getElementById('studyProgress').textContent = '';
+                    return;
+                }
+                
+                if (this.cards.length === 0) {
+                    document.getElementById('cardFront').textContent = 'Select a deck';
+                    document.getElementById('cardBack').textContent = 'Choose a deck from the dropdown above';
+                    document.getElementById('studyProgress').textContent = '';
+                    return;
+                }
+
+                const card = this.cards[this.currentIndex];
+                
+                // Show cards based on reversed state
+                if (this.isDeckReversed) {
+                    document.getElementById('cardFront').textContent = card.back;
+                    document.getElementById('cardBack').textContent = card.front;
+                } else {
+                    document.getElementById('cardFront').textContent = card.front;
+                    document.getElementById('cardBack').textContent = card.back;
+                }
+                
+                document.getElementById('studyProgress').textContent = 
+                    `Card ${this.currentIndex + 1} of ${this.cards.length}` + 
+                    (this.currentDeck ? ` • ${this.currentDeck.name}` : '');
+            }
+
+            shuffleCards() {
+                for (let i = this.cards.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
+                }
+                this.currentIndex = 0;
+                this.showCard();
+            }
+
+            recycleCard() {
+                if (this.cards.length === 0) return;
+
+                // Get the current card
+                const currentCard = this.cards[this.currentIndex];
+                
+                // Remove it from current position
+                this.cards.splice(this.currentIndex, 1);
+                
+                // Add it to the end of the deck
+                this.cards.push(currentCard);
+                
+                // Remove from completed set since we're seeing it again
+                this.cardsCompletedThisRun.delete(currentCard.id);
+                
+                // Reset flip state
+                this.isFlipped = false;
+                document.getElementById('flashcard').classList.remove('flipped');
+                
+                // Show the next card (which is now at the current index since we removed one)
+                // If we were at the end, wrap to beginning
+                if (this.currentIndex >= this.cards.length) {
+                    this.currentIndex = 0;
+                }
+                
+                this.showCard();
+                
+                // Visual feedback
+                const recycleBtn = document.getElementById('recycleCard');
+                const originalText = recycleBtn.textContent;
+                recycleBtn.textContent = '✓ Recycled to End!';
+                recycleBtn.disabled = true;
+                
+                setTimeout(() => {
+                    recycleBtn.textContent = originalText;
+                    recycleBtn.disabled = false;
+                }, 800);
+            }
+
+            startTimer() {
+                this.stopTimer();
+                this.timerPaused = false;
+                this.pausedElapsedTime = 0;
+                this.timerStartTime = Date.now();
+                this.currentElapsedTime = 0;
+                this.updateTimerDisplay();
+                this.updateToggleTimerButton();
+                
+                this.timerInterval = setInterval(() => {
+                    if (!this.timerPaused) {
+                        this.updateTimerDisplay();
+                    }
+                }, 1000);
+            }
+
+            stopTimer() {
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                    this.timerInterval = null;
+                }
+                this.timerPaused = false;
+            }
+
+            toggleTimer() {
+                if (!this.timerInterval) return; // No timer running
+                
+                this.timerPaused = !this.timerPaused;
+                
+                if (this.timerPaused) {
+                    // Pausing - store the current elapsed time
+                    this.pausedElapsedTime = this.currentElapsedTime;
+                } else {
+                    // Resuming - adjust start time to account for paused duration
+                    this.timerStartTime = Date.now() - (this.pausedElapsedTime * 1000);
+                }
+                
+                this.updateToggleTimerButton();
+            }
+
+            updateToggleTimerButton() {
+                const btn = document.getElementById('toggleTimer');
+                if (this.timerPaused) {
+                    btn.textContent = '▶️ Resume Timer';
+                    btn.classList.remove('btn-secondary');
+                    btn.classList.add('btn-primary');
+                } else {
+                    btn.textContent = '⏸️ Pause Timer';
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-secondary');
+                }
+            }
+
+            updateTimerDisplay() {
+                if (!this.timerStartTime) return;
+                
+                if (!this.timerPaused) {
+                    this.currentElapsedTime = Math.floor((Date.now() - this.timerStartTime) / 1000);
+                }
+                
+                const minutes = Math.floor(this.currentElapsedTime / 60);
+                const seconds = this.currentElapsedTime % 60;
+                
+                const display = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                document.getElementById('currentTimer').textContent = display;
+            }
+
+            formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            }
+
+            displayBestTime() {
+                const frontTimeEl = document.getElementById('bestTimeFront');
+                const backTimeEl = document.getElementById('bestTimeBack');
+                const deckModeEl = document.getElementById('deckMode');
+                
+                if (this.isDeckReversed) {
+                    deckModeEl.textContent = 'Back → Front';
+                } else {
+                    deckModeEl.textContent = 'Front → Back';
+                }
+                
+                if (this.currentDeck) {
+                    if (this.currentDeck.bestTimeFront) {
+                        frontTimeEl.textContent = `⭐ Front Best: ${this.formatTime(this.currentDeck.bestTimeFront)}`;
+                    } else {
+                        frontTimeEl.textContent = 'Front: No best time';
+                    }
+                    
+                    if (this.currentDeck.bestTimeBack) {
+                        backTimeEl.textContent = `⭐ Back Best: ${this.formatTime(this.currentDeck.bestTimeBack)}`;
+                    } else {
+                        backTimeEl.textContent = 'Back: No best time';
+                    }
+                } else {
+                    frontTimeEl.textContent = '';
+                    backTimeEl.textContent = '';
+                }
+            }
+
+            checkDeckCompletion() {
+                if (!this.currentDeck) return;
+                
+                // Mark current card as completed
+                const currentCard = this.cards[this.currentIndex];
+                this.cardsCompletedThisRun.add(currentCard.id);
+                
+                // Check if all original cards have been completed
+                const allCardsCompleted = this.currentDeck.cards.every(card => 
+                    this.cardsCompletedThisRun.has(card.id)
+                );
+                
+                if (allCardsCompleted) {
+                    this.stopTimer();
+                    const finalTime = this.currentElapsedTime;
+                    
+                    // Determine which best time to compare/update
+                    const timeKey = this.isDeckReversed ? 'bestTimeBack' : 'bestTimeFront';
+                    const modeText = this.isDeckReversed ? 'Back → Front' : 'Front → Back';
+                    
+                    // Check if this is a new best time
+                    const isNewBest = !this.currentDeck[timeKey] || finalTime < this.currentDeck[timeKey];
+                    
+                    if (isNewBest) {
+                        this.currentDeck[timeKey] = finalTime;
+                        
+                        // Update the deck in the decks array
+                        const deckIndex = this.decks.findIndex(d => d.id === this.currentDeck.id);
+                        if (deckIndex !== -1) {
+                            this.decks[deckIndex][timeKey] = finalTime;
+                        }
+                        
+                        this.saveDecks();
+                        this.displayBestTime();
+                        
+                        alert(`🎉 Deck Complete! (${modeText})\n\n⭐ NEW BEST TIME: ${this.formatTime(finalTime)}!`);
+                    } else {
+                        alert(`✅ Deck Complete! (${modeText})\n\nYour Time: ${this.formatTime(finalTime)}\nBest Time: ${this.formatTime(this.currentDeck[timeKey])}`);
+                    }
+                    
+                    // Shuffle the deck for next run
+                    this.shuffleDeck();
+                    
+                    // Reset for next run
+                    this.cardsCompletedThisRun = new Set();
+                    this.currentIndex = 0;
+                    this.startTimer();
+                }
+            }
+
+            shuffleDeck() {
+                // Fisher-Yates shuffle algorithm
+                for (let i = this.cards.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
+                }
+            }
+
+            reverseDeck() {
+                if (!this.currentDeck || this.cards.length === 0) return;
+                
+                // Toggle reversed state
+                this.isDeckReversed = !this.isDeckReversed;
+                
+                // Reset for new run
+                this.cardsCompletedThisRun = new Set();
+                this.currentIndex = 0;
+                this.isFlipped = false;
+                document.getElementById('flashcard').classList.remove('flipped');
+                
+                // Restart timer
+                this.startTimer();
+                
+                // Update display
+                this.showCard();
+                this.displayBestTime();
+                
+                // Visual feedback
+                const reverseBtn = document.getElementById('reverseDeckBtn');
+                const originalText = reverseBtn.textContent;
+                reverseBtn.textContent = this.isDeckReversed ? '✓ Reversed!' : '✓ Normal!';
+                reverseBtn.disabled = true;
+                
+                setTimeout(() => {
+                    reverseBtn.textContent = originalText;
+                    reverseBtn.disabled = false;
+                }, 800);
+            }
+
+            setupQuizMode() {
+                const startBtn = document.getElementById('startQuiz');
+                const nextBtn = document.getElementById('nextQuizCard');
+
+                startBtn.addEventListener('click', () => this.startQuiz());
+                nextBtn.addEventListener('click', () => this.nextQuizQuestion());
+            }
+
+            startQuiz() {
+                if (this.cards.length < 2) {
+                    alert('Please select a deck with at least 2 cards to start a quiz!');
+                    return;
+                }
+
+                this.quizScore = 0;
+                this.quizTotal = 0;
+                this.currentIndex = 0;
+                this.shuffleCards();
+                document.getElementById('startQuiz').style.display = 'none';
+                this.showQuizQuestion();
+            }
+
+            showQuizQuestion() {
+                if (this.currentIndex >= this.cards.length) {
+                    this.endQuiz();
+                    return;
+                }
+
+                const card = this.cards[this.currentIndex];
+                const options = this.generateOptions(card);
+
+                document.getElementById('quizQuestion').innerHTML = `
+                    <h3>What is the translation of:</h3>
+                    <h3 style="color: #E34234;">${card.front}</h3>
+                `;
+
+                const optionsContainer = document.getElementById('quizOptions');
+                optionsContainer.innerHTML = '';
+
+                options.forEach((option, index) => {
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'quiz-option';
+                    optionDiv.textContent = option;
+                    optionDiv.addEventListener('click', () => this.checkAnswer(option, card.back, optionDiv));
+                    optionsContainer.appendChild(optionDiv);
+                });
+
+                document.getElementById('quizScore').textContent = 
+                    `Score: ${this.quizScore}/${this.quizTotal}`;
+                document.getElementById('nextQuizCard').style.display = 'none';
+            }
+
+            generateOptions(correctCard) {
+                const options = [correctCard.back];
+                const otherCards = this.cards.filter(c => c.id !== correctCard.id);
+
+                while (options.length < 4 && otherCards.length >= options.length) {
+                    const randomCard = otherCards[Math.floor(Math.random() * otherCards.length)];
+                    if (!options.includes(randomCard.back)) {
+                        options.push(randomCard.back);
+                    }
+                }
+
+                return options.sort(() => Math.random() - 0.5);
+            }
+
+            checkAnswer(selected, correct, optionElement) {
+                this.quizTotal++;
+                const allOptions = document.querySelectorAll('.quiz-option');
+                allOptions.forEach(opt => opt.style.pointerEvents = 'none');
+
+                if (selected === correct) {
+                    this.quizScore++;
+                    optionElement.classList.add('correct');
+                } else {
+                    optionElement.classList.add('incorrect');
+                    allOptions.forEach(opt => {
+                        if (opt.textContent === correct) {
+                            opt.classList.add('correct');
+                        }
+                    });
+                }
+
+                document.getElementById('quizScore').textContent = 
+                    `Score: ${this.quizScore}/${this.quizTotal}`;
+                document.getElementById('nextQuizCard').style.display = 'block';
+            }
+
+            nextQuizQuestion() {
+                this.currentIndex++;
+                this.showQuizQuestion();
+            }
+
+            endQuiz() {
+                const percentage = Math.round((this.quizScore / this.quizTotal) * 100);
+                document.getElementById('quizQuestion').innerHTML = `
+                    <h2>Quiz Complete! 🎉</h2>
+                    <p style="font-size: 1.5rem; margin-top: 20px;">
+                        Your score: ${this.quizScore}/${this.quizTotal} (${percentage}%)
+                    </p>
+                `;
+                document.getElementById('quizOptions').innerHTML = '';
+                document.getElementById('nextQuizCard').style.display = 'none';
+                document.getElementById('startQuiz').style.display = 'block';
+            }
+
+            setupManageMode() {
+                document.getElementById('clearAll').addEventListener('click', () => {
+                    if (confirm('Are you sure you want to delete all decks?')) {
+                        this.decks = [];
+                        this.cards = [];
+                        this.currentDeck = null;
+                        this.saveDecks();
+                        this.saveCards();
+                        this.updateCardCount();
+                        this.renderCardList();
+                        this.renderDeckSelector();
+                    }
+                });
+            }
+
+            renderCardList() {
+                const container = document.getElementById('cardList');
+
+                if (this.decks.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <h3>No decks yet</h3>
+                            <p>Import an Excel file to create decks automatically!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = this.decks.map(deck => `
+                    <div class="card-item">
+                        <div class="card-content">
+                            <strong>${deck.name}</strong>
+                            <div>${deck.cards.length} cards • Created ${new Date(deck.createdAt).toLocaleDateString()}</div>
+                        </div>
+                        <button class="btn btn-danger" onclick="app.deleteDeck(${deck.id})">Delete Deck</button>
+                    </div>
+                `).join('');
+            }
+
+            deleteDeck(id) {
+                if (confirm('Delete this deck?')) {
+                    this.decks = this.decks.filter(deck => deck.id !== id);
+                    if (this.currentDeck && this.currentDeck.id === id) {
+                        this.currentDeck = null;
+                        this.cards = [];
+                    }
+                    this.saveDecks();
+                    this.updateCardCount();
+                    this.renderCardList();
+                    this.renderDeckSelector();
+                }
+            }
+
+            saveCards() {
+                localStorage.setItem('flashcards', JSON.stringify(this.cards));
+            }
+
+            updateCardCount() {
+                document.getElementById('cardCount').textContent = this.decks.length;
+            }
+        }
+
+        // Initialize app
+        const app = new FlashcardApp();
+    </script>
+</body>
+</html>
