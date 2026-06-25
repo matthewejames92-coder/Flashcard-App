@@ -2946,12 +2946,19 @@
             fwLoop(ts) {
                 if (!this.fwRunning || this.fwPaused) return;
 
-                const dt = this._fwLastTs ? Math.min(ts - this._fwLastTs, 50) : 16;
-                this._fwLastTs = ts;
-
                 const field = document.getElementById('fwField');
                 const fieldH = field.clientHeight;
                 const fieldW = field.clientWidth;
+
+                // Wait for the arena to finish rendering before starting
+                if (fieldH === 0 || fieldW === 0) {
+                    this._fwRaf = requestAnimationFrame(ts2 => this.fwLoop(ts2));
+                    return;
+                }
+
+                const dt = this._fwLastTs ? Math.min(ts - this._fwLastTs, 50) : 16;
+                this._fwLastTs = ts;
+
                 const groundY = fieldH - 4; // ground line y
 
                 const now = Date.now();
