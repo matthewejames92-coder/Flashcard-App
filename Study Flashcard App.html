@@ -3378,7 +3378,7 @@
 
                 // Legend
                 const leg = document.getElementById('vcLegend');
-                leg.innerHTML = `<span>⬜ You (white) — <em>${p[0].front}</em> side</span><span>⬛ AI (black) — <em>${p[0].back}</em> side</span><span style="color:#888">Only the same piece type can capture its counterpart</span>`;
+                leg.innerHTML = `<span>⬜ You (white) — <em>${p[0].front}</em> side</span><span>⬛ AI (black) — <em>${p[0].back}</em> side</span><span style="color:#888">Translate your piece's word to capture</span>`;
 
                 this.vcRender();
                 this.vcSetStatus('Your turn — click a white piece');
@@ -3437,8 +3437,7 @@
                     while (r>=0 && r<8 && c>=0 && c<8) {
                         const t = this.vcBoard[r][c];
                         if (t) {
-                            // Can only capture own-type counterpart
-                            if (t.color !== color && t.type === type) moves.push([r, c]);
+                            if (t.color !== color) moves.push([r, c]);
                             break;
                         }
                         moves.push([r, c]);
@@ -3450,7 +3449,7 @@
                     if (r<0||r>7||c<0||c>7) return;
                     const t = this.vcBoard[r][c];
                     if (!t) moves.push([r, c]);
-                    else if (t.color !== color && t.type === type) moves.push([r, c]);
+                    else if (t.color !== color) moves.push([r, c]);
                 };
 
                 if (type === 'pawn') {
@@ -3464,7 +3463,7 @@
                         const nr=row+d, nc=col+dc;
                         if (nr>=0&&nr<8&&nc>=0&&nc<8) {
                             const t = this.vcBoard[nr][nc];
-                            if (t && t.color!==color && t.type==='pawn') moves.push([nr, nc]);
+                            if (t && t.color!==color) moves.push([nr, nc]);
                         }
                     });
                 } else if (type === 'knight') {
