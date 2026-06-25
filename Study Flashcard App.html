@@ -794,15 +794,8 @@
         }
 
         .match-tile.matched {
-            animation: matchFadeOut 0.45s ease forwards;
             cursor: default;
             pointer-events: none;
-        }
-
-        @keyframes matchFadeOut {
-            0%   { opacity: 1; transform: scale(1); border-color: #28a745; background: #d4edda; }
-            50%  { opacity: 0.7; transform: scale(1.08); border-color: #28a745; background: #d4edda; }
-            100% { opacity: 0; transform: scale(0); }
         }
 
         .match-tile.wrong-flash {
@@ -2827,7 +2820,23 @@
                     b.classList.remove('selected');
                     a.classList.add('matched');
                     b.classList.add('matched');
-                    setTimeout(() => { a.style.visibility = 'hidden'; b.style.visibility = 'hidden'; }, 460);
+                    // Flash green, then fade + shrink out
+                    [a, b].forEach(el => {
+                        el.style.transition = 'none';
+                        el.style.borderColor = '#28a745';
+                        el.style.background = '#d4edda';
+                    });
+                    requestAnimationFrame(() => requestAnimationFrame(() => {
+                        [a, b].forEach(el => {
+                            el.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+                            el.style.opacity = '0';
+                            el.style.transform = 'scale(0)';
+                        });
+                        setTimeout(() => {
+                            a.style.visibility = 'hidden';
+                            b.style.visibility = 'hidden';
+                        }, 370);
+                    }));
                     this.matchPairsFound++;
                     this.updateMatchHUD();
                     if (this.matchPairsFound === this.matchPairsTotal) this.endMatchGame();
