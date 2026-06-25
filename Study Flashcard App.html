@@ -930,30 +930,62 @@
             pointer-events: none;
         }
 
-        #fwInputRow {
+        #fwShieldRow {
             background: #1a1a2e;
             border-radius: 0 0 12px 12px;
             padding: 12px 16px;
             display: flex;
-            gap: 10px;
-            align-items: center;
+            gap: 12px;
+            align-items: stretch;
         }
 
-        #fwInput {
+        .fw-shield {
             flex: 1;
+            padding: 14px 10px;
+            border: 2px solid #444;
+            border-radius: 10px;
             background: #0d0d1a;
-            border: 2px solid #333;
-            border-radius: 8px;
             color: white;
-            font-size: 1.1rem;
-            padding: 10px 14px;
-            outline: none;
-            transition: border-color 0.2s;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+            min-height: 56px;
+            word-break: break-word;
         }
 
-        #fwInput:focus { border-color: #E34234; }
-        #fwInput.fw-hit  { border-color: #28a745; background: rgba(40,167,69,0.15); }
-        #fwInput.fw-miss { border-color: #dc3545; background: rgba(220,53,69,0.15); }
+        .fw-shield:hover:not(:disabled) {
+            border-color: #E34234;
+            background: rgba(227,66,52,0.15);
+            transform: translateY(-2px);
+        }
+
+        .fw-shield.shield-hit {
+            border-color: #28a745;
+            background: rgba(40,167,69,0.25);
+            animation: shieldPop 0.25s ease;
+        }
+
+        .fw-shield.shield-miss {
+            border-color: #dc3545;
+            background: rgba(220,53,69,0.15);
+            animation: shieldFizzle 0.4s ease;
+        }
+
+        @keyframes shieldPop {
+            0%   { transform: scale(1); }
+            50%  { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes shieldFizzle {
+            0%,100% { transform: translateX(0); }
+            20%     { transform: translateX(-5px); }
+            40%     { transform: translateX(5px); }
+            60%     { transform: translateX(-4px); }
+            80%     { transform: translateX(4px); }
+        }
 
         .fw-game-over {
             position: absolute;
@@ -1290,9 +1322,10 @@
                             </div>
                         </div>
                     </div>
-                    <div id="fwInputRow">
-                        <input type="text" id="fwInput" placeholder="Type the translation…" autocomplete="off" spellcheck="false">
-                        <button class="btn btn-secondary" id="fwPauseBtn" style="white-space:nowrap;">⏸ Pause</button>
+                    <div id="fwShieldRow">
+                        <button class="fw-shield" id="fwShieldA"></button>
+                        <button class="fw-shield" id="fwShieldB"></button>
+                        <button class="btn btn-secondary" id="fwPauseBtn" style="white-space:nowrap; align-self:center;">⏸ Pause</button>
                     </div>
                 </div>
 
@@ -2513,8 +2546,8 @@
                 });
                 document.getElementById('fwPauseBtn').addEventListener('click', () => this.fwTogglePause());
 
-                const fwInput = document.getElementById('fwInput');
-                fwInput.addEventListener('input', () => this.fwCheckInput());
+                document.getElementById('fwShieldA').addEventListener('click', () => this.fwClickShield('A'));
+                document.getElementById('fwShieldB').addEventListener('click', () => this.fwClickShield('B'));
             }
 
             getGameDeck() {
@@ -2873,15 +2906,15 @@
                 field.querySelectorAll('.fw-level-banner').forEach(el => el.remove());
 
                 document.getElementById('fwGameOver').classList.remove('show');
-                document.getElementById('fwInput').value = '';
-                document.getElementById('fwInput').className = '';
                 document.getElementById('fwPauseBtn').textContent = '⏸ Pause';
                 document.getElementById('fwCombo').textContent = '';
+                this.fwShieldTarget = null;
+                document.getElementById('fwShieldA').textContent = '';
+                document.getElementById('fwShieldB').textContent = '';
+                document.getElementById('fwShieldA').className = 'fw-shield';
+                document.getElementById('fwShieldB').className = 'fw-shield';
 
                 this.fwUpdateHUD();
-
-                // Focus input
-                setTimeout(() => document.getElementById('fwInput').focus(), 100);
 
                 // Cancel any previous loop
                 if (this._fwRaf) cancelAnimationFrame(this._fwRaf);
@@ -2952,6 +2985,9 @@
                     this.fwLoseLife(field, w);
                 });
 
+                // Keep shield buttons targeting the lowest word
+                this.fwUpdateShields();
+
                 this._fwRaf = requestAnimationFrame(ts2 => this.fwLoop(ts2));
             }
 
@@ -2971,30 +3007,75 @@
                 this.fwWords.push({ id, el, card, y: -50 });
             }
 
-            fwCheckInput() {
-                const input = document.getElementById('fwInput');
-                const typed = input.value.trim().toLowerCase();
-                if (!typed) return;
+            fwUpdateShields() {
+                if (this.fwWords.length === 0) {
+                    document.getElementById('fwShieldA').textContent = '';
+                    document.getElementById('fwShieldB').textContent = '';
+                    this.fwShieldTarget = null;
+                    return;
+                }
 
-                // Find first matching word (case-insensitive, trimmed)
-                const match = this.fwWords.find(w => w.card.back.trim().toLowerCase() === typed);
-                if (match) {
-                    this.fwWords = this.fwWords.filter(x => x.id !== match.id);
+                // Target the word lowest on screen (highest y value)
+                const lowest = this.fwWords.reduce((a, b) => a.y > b.y ? a : b);
+
+                // Only regenerate options when the target changes
+                if (this.fwShieldTarget === lowest.id) return;
+                this.fwShieldTarget = lowest.id;
+
+                // Highlight targeted word
+                this.fwWords.forEach(w => w.el.classList.toggle('targeted', w.id === lowest.id));
+
+                const correct = lowest.card.back;
+                // Pick a random wrong answer from another card in the deck
+                const others = this.fwDeck.filter(c => c.back !== correct);
+                const wrong = others.length
+                    ? others[Math.floor(Math.random() * others.length)].back
+                    : '—';
+
+                // Randomly assign correct/wrong to A/B
+                const [a, b] = Math.random() < 0.5 ? [correct, wrong] : [wrong, correct];
+                this.fwShieldCorrect = correct;
+
+                const btnA = document.getElementById('fwShieldA');
+                const btnB = document.getElementById('fwShieldB');
+                btnA.textContent = a;
+                btnB.textContent = b;
+                btnA.className = 'fw-shield';
+                btnB.className = 'fw-shield';
+            }
+
+            fwClickShield(which) {
+                if (!this.fwRunning || this.fwPaused || !this.fwShieldTarget) return;
+
+                const btn = document.getElementById(which === 'A' ? 'fwShieldA' : 'fwShieldB');
+                const chosen = btn.textContent;
+                const isCorrect = chosen === this.fwShieldCorrect;
+
+                if (isCorrect) {
+                    // Blast the targeted word
+                    const target = this.fwWords.find(w => w.id === this.fwShieldTarget);
+                    if (!target) return;
+                    this.fwWords = this.fwWords.filter(x => x.id !== target.id);
+                    this.fwShieldTarget = null;
                     this.fwCombo++;
                     const pts = 10 * this.fwLevel * (this.fwCombo >= 3 ? 2 : 1);
                     this.fwScore += pts;
                     this.fwUpdateHUD();
-                    this.fwExplode(match.el);
+                    this.fwExplode(target.el);
                     this.fwShowCombo();
-                    input.value = '';
-                    input.className = 'fw-hit';
-                    setTimeout(() => { input.className = ''; }, 300);
+                    btn.className = 'fw-shield shield-hit';
+                    setTimeout(() => { btn.className = 'fw-shield'; }, 300);
                 } else {
-                    // partial match highlight — highlight targeted word
-                    this.fwWords.forEach(w => {
-                        const back = w.card.back.trim().toLowerCase();
-                        w.el.classList.toggle('targeted', back.startsWith(typed));
-                    });
+                    // Ineffective — shield fizzles, word keeps falling
+                    this.fwCombo = 0;
+                    btn.className = 'fw-shield shield-miss';
+                    setTimeout(() => { btn.className = 'fw-shield'; }, 450);
+                    // Brief flash on the targeted word
+                    const target = this.fwWords.find(w => w.id === this.fwShieldTarget);
+                    if (target) {
+                        target.el.style.filter = 'brightness(2)';
+                        setTimeout(() => { if (target.el) target.el.style.filter = ''; }, 300);
+                    }
                 }
             }
 
@@ -3004,10 +3085,12 @@
                 this.fwUpdateHUD();
                 document.getElementById('fwCombo').textContent = '';
 
-                // Flash input red
-                const input = document.getElementById('fwInput');
-                input.className = 'fw-miss';
-                setTimeout(() => { input.className = ''; }, 400);
+                // Flash both shields red
+                ['fwShieldA','fwShieldB'].forEach(id => {
+                    const el = document.getElementById(id);
+                    el.classList.add('shield-miss');
+                    setTimeout(() => el.classList.remove('shield-miss'), 450);
+                });
 
                 // Flash field border
                 field.style.boxShadow = '0 0 0 3px #dc3545';
