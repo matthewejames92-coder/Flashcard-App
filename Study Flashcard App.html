@@ -1118,6 +1118,34 @@
             .vc-piece-word { font-size: 0.38em; }
             .vc-piece-sym  { font-size: 0.4em; }
         }
+
+        /* ── Vocab Gauge ─────────────────────────────────────────── */
+        .vocab-gauge-card {
+            background: #f8f9fa; border-radius: 16px; padding: 24px 20px;
+            display: flex; align-items: center; justify-content: center;
+            gap: 32px; flex-wrap: wrap;
+            border: 1px solid #e0e0e0;
+        }
+        .vocab-gauge-svg-wrap {
+            position: relative; width: 200px; flex-shrink: 0;
+        }
+        .vocab-gauge-svg { width: 100%; display: block; }
+        .vocab-gauge-pct {
+            position: absolute; bottom: 0; left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.6rem; font-weight: 800; color: #333;
+            line-height: 1;
+        }
+        .vocab-gauge-legend {
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .vg-leg-item {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.92rem; color: #444;
+        }
+        .vg-dot {
+            width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
+        }
     </style>
 </head>
 <body>
@@ -1503,6 +1531,25 @@
             <!-- Stats Tab -->
             <div class="tab-content" id="stats">
                 <h2 style="margin-bottom:20px;">📊 Progress & Stats</h2>
+                <div id="vocabGaugeWrap" style="display:none; margin-bottom:28px;">
+                    <h3 style="margin-bottom:16px; text-align:center;">🇪🇸 Spanish Vocabulary Mastery</h3>
+                    <div class="vocab-gauge-card">
+                        <div class="vocab-gauge-svg-wrap">
+                            <svg viewBox="0 0 200 110" class="vocab-gauge-svg">
+                                <!-- Track -->
+                                <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#e0e0e0" stroke-width="18" stroke-linecap="round"/>
+                                <!-- Fill -->
+                                <path id="gaugeFill" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#28a745" stroke-width="18" stroke-linecap="round" stroke-dasharray="0 251.2"/>
+                            </svg>
+                            <div class="vocab-gauge-pct" id="gaugePct">0%</div>
+                        </div>
+                        <div class="vocab-gauge-legend">
+                            <div class="vg-leg-item"><span class="vg-dot" style="background:#28a745"></span><span id="vgLearnedLbl">0 learned (Y + mastered)</span></div>
+                            <div class="vg-leg-item"><span class="vg-dot" style="background:#e0e0e0"></span><span id="vgRemainingLbl">0 remaining</span></div>
+                            <div class="vg-leg-item" style="margin-top:4px;font-size:0.8rem;color:#888;"><span id="vgTotalLbl">Total: 0 words</span></div>
+                        </div>
+                    </div>
+                </div>
                 <div class="stats-grid" id="statsGrid"></div>
                 <h3 style="margin-bottom:12px;">🐢 Weakest Cards (lowest ease)</h3>
                 <div id="weakCards" style="margin-bottom:28px;"></div>
@@ -1550,6 +1597,7 @@
             constructor() {
                 this.cards = JSON.parse(localStorage.getItem('flashcards')) || [];
                 this.decks = JSON.parse(localStorage.getItem('flashcardDecks')) || [];
+                this.vocabStats = JSON.parse(localStorage.getItem('vocabStats')) || { yCount: 0, totalCount: 0 };
                 this.currentDeck = null;
                 this.currentIndex = 0;
                 this.isFlipped = false;
@@ -2058,6 +2106,7 @@
 
                         let importedCards = [];
                         let skipped = 0;
+                        let yCount = 0;
                         const deckSizeVal = parseInt(document.getElementById('deckSizeSelect').value);
                         const deckSize = deckSizeVal === 0 ? Infinity : deckSizeVal;
                         const deckMap = new Map();
@@ -2076,6 +2125,7 @@
 
                             if (learned && String(learned).trim().toUpperCase() === 'Y') {
                                 skipped++;
+                                yCount++;
                                 return;
                             }
 
@@ -2118,6 +2168,11 @@
 
                         this.decks = [...this.decks, ...newDecks];
                         this.saveDecks();
+                        // Accumulate vocab learning stats from this import
+                        const totalThisImport = yCount + importedCards.length;
+                        this.vocabStats.yCount += yCount;
+                        this.vocabStats.totalCount += totalThisImport;
+                        localStorage.setItem('vocabStats', JSON.stringify(this.vocabStats));
                         this.renderDeckSelector();
                         this.updateDueBadge();
 
@@ -3603,6 +3658,34 @@
             // ── Stats Dashboard ─────────────────────────────────────────────
 
             renderStats() {
+                // ── Vocab Gauge ──────────────────────────────────────
+                const vs = this.vocabStats;
+                const gaugeWrap = document.getElementById('vocabGaugeWrap');
+                if (vs.totalCount > 0) {
+                    gaugeWrap.style.display = '';
+                    // SRS-mastered: cards reviewed ≥ 3 times (solid retention)
+                    const allCards = this.decks.flatMap(d => d.cards);
+                    const srsMastered = allCards.filter(c => c.srs && c.srs.repetitions >= 3).length;
+                    const learned = vs.yCount + srsMastered;
+                    const total = vs.totalCount;
+                    const pct = Math.min(100, Math.round(learned / total * 100));
+
+                    // SVG arc: semicircle path length ≈ π × r = π × 80 ≈ 251.2
+                    const arcLen = 251.2;
+                    const fill = (pct / 100) * arcLen;
+                    document.getElementById('gaugeFill').setAttribute('stroke-dasharray', `${fill} ${arcLen}`);
+                    // Colour gradient: red→amber→green
+                    const colour = pct >= 66 ? '#28a745' : pct >= 33 ? '#fd7e14' : '#dc3545';
+                    document.getElementById('gaugeFill').setAttribute('stroke', colour);
+                    document.getElementById('gaugePct').textContent = pct + '%';
+                    document.getElementById('gaugePct').style.color = colour;
+                    document.getElementById('vgLearnedLbl').textContent = `${learned.toLocaleString()} learned (pre-known + SRS mastered)`;
+                    document.getElementById('vgRemainingLbl').textContent = `${Math.max(0, total - learned).toLocaleString()} remaining`;
+                    document.getElementById('vgTotalLbl').textContent = `Total: ${total.toLocaleString()} words`;
+                } else {
+                    gaugeWrap.style.display = 'none';
+                }
+
                 const totalDecks = this.decks.length;
                 const totalCards = this.decks.reduce((s, d) => s + d.cards.length, 0);
 
