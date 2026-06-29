@@ -1969,13 +1969,13 @@
                 const quizDeckSelector = document.getElementById('quizDeckSelector');
 
                 deckSelector.addEventListener('change', (e) => {
-                    const deckId = parseInt(e.target.value);
-                    this.selectDeck(deckId);
+                    const v = e.target.value;
+                    this.selectDeck(v.startsWith('srs:') ? v : parseInt(v));
                 });
 
                 quizDeckSelector.addEventListener('change', (e) => {
-                    const deckId = parseInt(e.target.value);
-                    this.selectDeck(deckId);
+                    const v = e.target.value;
+                    this.selectDeck(v.startsWith('srs:') ? v : parseInt(v));
                 });
 
                 this.renderDeckSelector();
@@ -1986,13 +1986,21 @@
                 const quizDeckSelector = document.getElementById('quizDeckSelector');
                 const gameDeckSelector = document.getElementById('gameDeckSelector');
 
-                const options = this.decks.map(deck =>
+                const deckOptions = this.decks.map(deck =>
                     `<option value="${deck.id}">${deck.name}</option>`
                 ).join('');
 
-                deckSelector.innerHTML = `<option value="">-- Select a deck --</option>${options}`;
-                quizDeckSelector.innerHTML = `<option value="">-- Select a deck --</option>${options}`;
-                gameDeckSelector.innerHTML = `<option value="">-- Select a deck --</option>${options}`;
+                const levelLabels = ['🔴 Level 1 — New / Struggling','🟠 Level 2 — Learning','🟡 Level 3 — Familiar','🟢 Level 4 — Mastered'];
+                const levelOptions = levelLabels.map((lbl, i) => {
+                    const count = this.buildLevelDeck(i + 1)?.cards.length ?? 0;
+                    return `<option value="srs:${i+1}">${lbl} (${count})</option>`;
+                }).join('');
+                const levelGroup = `<optgroup label="── By SRS Level ──">${levelOptions}</optgroup>`;
+
+                const full = `<option value="">-- Select a deck --</option>${deckOptions}${levelGroup}`;
+                deckSelector.innerHTML = full;
+                quizDeckSelector.innerHTML = full;
+                gameDeckSelector.innerHTML = full;
 
                 if (this.decks.length === 1) {
                     deckSelector.value = this.decks[0].id;
@@ -2002,8 +2010,21 @@
                 }
             }
 
+            buildLevelDeck(level) {
+                const allCards = this.decks.flatMap(d => d.cards);
+                let cards;
+                if (level === 1) cards = allCards.filter(c => !c.srs || c.srs.repetitions === 0 || c.srs.easeFactor < 1.8);
+                else if (level === 2) cards = allCards.filter(c => c.srs && c.srs.repetitions >= 1 && c.srs.repetitions <= 3 && c.srs.easeFactor >= 1.8);
+                else if (level === 3) cards = allCards.filter(c => c.srs && c.srs.repetitions >= 4 && c.srs.repetitions <= 7);
+                else cards = allCards.filter(c => c.srs && c.srs.repetitions >= 8);
+                if (!cards.length) return null;
+                return { id: `srs:${level}`, name: `Level ${level}`, cards, deckNumber: null };
+            }
+
             selectDeck(deckId) {
-                const deck = this.decks.find(d => d.id === deckId);
+                const deck = String(deckId).startsWith('srs:')
+                    ? this.buildLevelDeck(parseInt(String(deckId).split(':')[1]))
+                    : this.decks.find(d => d.id === deckId);
                 if (deck) {
                     this.currentDeck = deck;
                     this.cards = [...deck.cards];
@@ -2043,15 +2064,20 @@
                 const exportData = this.originalFileData.map(row => [...row]);
 
                 const cardToDeckMap = new Map();
+                const cardToSRS    = new Map();
                 const deckFrontTimes = new Map();
-                const deckBackTimes = new Map();
+                const deckBackTimes  = new Map();
 
                 this.decks.forEach(deck => {
                     if (deck.deckNumber) {
                         if (deck.bestTimeFront) deckFrontTimes.set(deck.deckNumber, deck.bestTimeFront);
-                        if (deck.bestTimeBack) deckBackTimes.set(deck.deckNumber, deck.bestTimeBack);
-                        deck.cards.forEach(card => cardToDeckMap.set(card.front, deck.deckNumber));
+                        if (deck.bestTimeBack)  deckBackTimes.set(deck.deckNumber, deck.bestTimeBack);
                     }
+                    deck.cards.forEach(card => {
+                        const key = String(card.front).trim();
+                        if (deck.deckNumber) cardToDeckMap.set(key, deck.deckNumber);
+                        if (card.srs) cardToSRS.set(key, card.srs);
+                    });
                 });
 
                 exportData.forEach((row, index) => {
@@ -2059,12 +2085,16 @@
                         if (!row[3]) row[3] = 'Deck';
                         if (!row[4]) row[4] = 'Best Time (Front)';
                         if (!row[5]) row[5] = 'Best Time (Back)';
+                        row[6] = 'SRS Interval';
+                        row[7] = 'SRS Reps';
+                        row[8] = 'SRS Ease';
+                        row[9] = 'SRS Next Review';
                         return;
                     }
 
-                    const front = row[0];
-                    if (front && cardToDeckMap.has(String(front).trim())) {
-                        const deckNum = cardToDeckMap.get(String(front).trim());
+                    const front = String(row[0] || '').trim();
+                    if (front && cardToDeckMap.has(front)) {
+                        const deckNum = cardToDeckMap.get(front);
                         row[3] = deckNum;
                         if (deckFrontTimes.has(deckNum)) {
                             const s = deckFrontTimes.get(deckNum);
@@ -2075,15 +2105,22 @@
                             row[5] = `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
                         }
                     }
+                    if (front && cardToSRS.has(front)) {
+                        const srs = cardToSRS.get(front);
+                        row[6] = srs.interval || 1;
+                        row[7] = srs.repetitions || 0;
+                        row[8] = Math.round((srs.easeFactor || 2.5) * 100) / 100;
+                        row[9] = srs.nextReview ? new Date(srs.nextReview).toISOString().split('T')[0] : '';
+                    }
                 });
 
                 const wb = XLSX.utils.book_new();
                 const ws = XLSX.utils.aoa_to_sheet(exportData);
-                ws['!cols'] = [{ wch: 25 }, { wch: 30 }, { wch: 10 }, { wch: 10 }, { wch: 16 }, { wch: 16 }];
+                ws['!cols'] = [{ wch: 25 }, { wch: 30 }, { wch: 10 }, { wch: 10 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 10 }, { wch: 10 }, { wch: 14 }];
                 XLSX.utils.book_append_sheet(wb, ws, 'Vocabulary');
                 XLSX.writeFile(wb, this.originalFileName);
 
-                alert(`✓ File exported as "${this.originalFileName}"\n\nColumn D: Deck numbers\nColumn E: Best times (Front → Back)\nColumn F: Best times (Back → Front)\n\nRe-import this file to maintain consistent decks!`);
+                alert(`✓ File exported as "${this.originalFileName}"\n\nColumn D: Deck numbers\nColumn E: Best times (Front → Back)\nColumn F: Best times (Back → Front)\nColumns G–J: SRS progress (interval, reps, ease, next review)\n\nRe-import this file to fully restore your progress on any device!`);
             }
 
             handleFile(file, statusElement) {
@@ -2122,6 +2159,11 @@
                             const back = row[1];
                             const learned = row[2];
                             const existingDeckNum = row[3];
+                            // Columns G–J: SRS data saved by previous export
+                            const srsInterval = row[6];
+                            const srsReps     = row[7];
+                            const srsEase     = row[8];
+                            const srsNext     = row[9];
 
                             if (learned && String(learned).trim().toUpperCase() === 'Y') {
                                 skipped++;
@@ -2136,6 +2178,17 @@
                                     back: String(back).trim(),
                                     originalRowIndex: index
                                 };
+                                // Restore SRS progress if the columns are present
+                                if (srsReps !== undefined && srsReps !== '' && !isNaN(srsReps)) {
+                                    const nextTs = srsNext ? new Date(String(srsNext)).getTime() : Date.now();
+                                    card.srs = {
+                                        interval:    parseFloat(srsInterval) || 1,
+                                        repetitions: parseInt(srsReps) || 0,
+                                        easeFactor:  parseFloat(srsEase) || 2.5,
+                                        nextReview:  isNaN(nextTs) ? Date.now() : nextTs,
+                                        lastReviewed: nextTs ? nextTs - (parseFloat(srsInterval) || 1) * 86400000 : null
+                                    };
+                                }
 
                                 let deckNum;
                                 if (existingDeckNum && !isNaN(existingDeckNum)) {
@@ -2751,7 +2804,9 @@
 
             getGameDeck() {
                 const sel = document.getElementById('gameDeckSelector');
-                const id = parseInt(sel.value);
+                const v = sel.value;
+                if (v.startsWith('srs:')) return this.buildLevelDeck(parseInt(v.split(':')[1]));
+                const id = parseInt(v);
                 return this.decks.find(d => d.id === id) || null;
             }
 
