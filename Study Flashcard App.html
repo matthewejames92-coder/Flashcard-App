@@ -2125,6 +2125,20 @@
                         return;
                     }
 
+                    // Never touch rows already marked as learned (Y)
+                    const isLearned = String(row[2] || '').trim().toUpperCase() === 'Y';
+                    if (isLearned) {
+                        // Clear any stale deck/SRS data that may have crept in previously
+                        row[3] = '';
+                        row[4] = '';
+                        row[5] = '';
+                        row[6] = '';
+                        row[7] = '';
+                        row[8] = '';
+                        row[9] = '';
+                        return;
+                    }
+
                     const front = String(row[0] || '').trim();
                     if (front && cardToDeckMap.has(front)) {
                         const deckNum = cardToDeckMap.get(front);
