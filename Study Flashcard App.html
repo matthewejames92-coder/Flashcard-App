@@ -827,7 +827,16 @@
             display: none;
         }
 
-        .fw-arena.active { display: block; }
+        .fw-arena.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .fw-arena.active .fw-hud,
+        .fw-arena.active #fwShieldRow {
+            width: min(400px, 98vw);
+        }
 
         .fw-hud {
             display: flex;
@@ -850,9 +859,10 @@
         #fwField {
             position: relative;
             background: linear-gradient(180deg, #0a0a1a 0%, #111827 100%);
-            border-radius: 0 0 12px 12px;
+            border-radius: 12px;
             overflow: hidden;
-            height: 360px;
+            width: min(400px, 98vw);
+            height: 600px;
             margin-bottom: 0;
         }
 
@@ -1019,7 +1029,7 @@
             .card-text { font-size: 2.5rem; }
             .flashcard { min-height: 200px; }
             .speed-options { grid-template-columns: 1fr; }
-            #fwField { height: 280px; }
+            #fwField { height: 480px; }
         }
 
         /* ── Vocab Chess ─────────────────────────────────────────── */
@@ -3215,7 +3225,7 @@
                 this.fwLastSpawn = 0;
                 this.fwLastLevelUp = 0;
                 this.fwSpawnInterval = 3000; // ms between spawns, decreases with level
-                this.fwBaseSpeed = 0.25;     // px per frame, increases with level
+                this.fwBaseSpeed = 0.08;     // px per ms, ~1/3 of original speed
                 this.fwWordIdCounter = 0;
 
                 // Clear field
@@ -3281,7 +3291,7 @@
                 if (newLevel > this.fwLevel) {
                     this.fwLevel = newLevel;
                     this.fwSpawnInterval = Math.max(900, 3000 - (this.fwLevel - 1) * 250);
-                    this.fwBaseSpeed  = 0.25 + (this.fwLevel - 1) * 0.06;
+                    this.fwBaseSpeed  = 0.08 + (this.fwLevel - 1) * 0.02;
                     this.fwShowLevelBanner();
                     this.fwUpdateHUD();
                 }
