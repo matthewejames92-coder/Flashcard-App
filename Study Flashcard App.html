@@ -2083,7 +2083,11 @@
                             const srsEase     = row[8];
                             const srsNext     = row[9];
 
-                            const isPrelearned = learned && String(learned).trim().toUpperCase() === 'Y';
+                            if (learned && String(learned).trim().toUpperCase() === 'Y') {
+                                skipped++;
+                                yCount++;
+                                return;
+                            }
 
                             if (front && back && String(front).trim() && String(back).trim()) {
                                 const card = {
@@ -2092,16 +2096,8 @@
                                     back: String(back).trim(),
                                     originalRowIndex: index
                                 };
-                                // Restore SRS progress if the columns are present; Y-marked cards get level-4 preset
-                                if (isPrelearned) {
-                                    card.srs = {
-                                        interval:     21,
-                                        repetitions:  8,
-                                        easeFactor:   2.5,
-                                        nextReview:   Date.now() + 21 * 86400000,
-                                        lastReviewed: Date.now()
-                                    };
-                                } else if (srsReps !== undefined && srsReps !== '' && !isNaN(srsReps)) {
+                                // Restore SRS progress if the columns are present
+                                if (srsReps !== undefined && srsReps !== '' && !isNaN(srsReps)) {
                                     const nextTs = srsNext ? new Date(String(srsNext)).getTime() : Date.now();
                                     card.srs = {
                                         interval:    parseFloat(srsInterval) || 1,
