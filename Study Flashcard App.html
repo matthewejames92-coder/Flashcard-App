@@ -1297,6 +1297,13 @@
                     <h2 style="margin-bottom: 8px;">⏰ Spaced Repetition Review</h2>
                     <p style="color: #666; font-size: 0.95rem;">Cards due for review based on how well you know them. Rate each card after flipping to schedule its next appearance.</p>
                 </div>
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+                    <label style="font-weight:600; color:#333;">Daily session limit:</label>
+                    <input type="number" id="srsLimit" min="5" max="500" value="50"
+                        style="width:80px; padding:6px 10px; border:2px solid #e0e0e0; border-radius:8px; font-size:1rem; font-weight:600;">
+                    <span style="color:#888; font-size:0.88rem;">cards per session (most overdue first)</span>
+                    <button class="btn btn-primary" id="srsReloadBtn" style="padding:7px 16px; font-size:0.9rem;">↺ Reload Queue</button>
+                </div>
                 <div id="srsStats" style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:20px;"></div>
                 <div class="shortcut-hint">
                     <kbd>Space</kbd> Flip &nbsp;
@@ -1799,6 +1806,13 @@
             // ── SRS Mode ────────────────────────────────────────────────────
 
             setupSrsMode() {
+                // Restore saved limit
+                const savedLimit = localStorage.getItem('srsLimit');
+                if (savedLimit) {
+                    const el = document.getElementById('srsLimit');
+                    if (el) el.value = savedLimit;
+                }
+                document.getElementById('srsReloadBtn').addEventListener('click', () => this.loadSrsQueue());
                 document.getElementById('srsFlipBtn').addEventListener('click', () => this.srsFlipCard());
 
                 document.querySelectorAll('[data-srs-rating]').forEach(btn => {
@@ -1834,7 +1848,15 @@
             }
 
             loadSrsQueue() {
-                this.srsQueue = this.getDueCards();
+                const limitEl = document.getElementById('srsLimit');
+                const limit = limitEl ? Math.max(1, parseInt(limitEl.value) || 50) : 50;
+                localStorage.setItem('srsLimit', limit);
+
+                const allDue = this.getDueCards();
+                // Sort most overdue first (smallest nextReview timestamp = longest waiting)
+                allDue.sort((a, b) => (a.card.srs?.nextReview || 0) - (b.card.srs?.nextReview || 0));
+                this.srsTotalDue = allDue.length;
+                this.srsQueue = allDue.slice(0, limit);
                 this.srsIndex = 0;
                 this.srsFlipped = false;
                 this.showSrsCard();
@@ -1930,7 +1952,7 @@
 
             updateSrsStats() {
                 const el = document.getElementById('srsStats');
-                const total = this.getDueCards().length;
+                const total = this.srsTotalDue ?? this.getDueCards().length;
                 const remaining = this.srsQueue.length;
                 el.innerHTML = `
                     <div style="background:#fef5f4; border-radius:8px; padding:12px 18px;">
