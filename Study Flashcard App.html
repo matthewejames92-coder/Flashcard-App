@@ -1061,13 +1061,138 @@
         .vg-dot {
             width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0;
         }
+
+        /* ── Speak button ────────────────────────────────────────── */
+        .flashcard-container { position: relative; }
+        .speak-btn {
+            position: absolute; top: 10px; right: 10px; z-index: 5;
+            background: rgba(255,255,255,0.25);
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 50%;
+            width: 46px; height: 46px;
+            font-size: 1.3rem; cursor: pointer;
+            transition: transform 0.15s, background 0.15s;
+        }
+        .speak-btn:hover { background: rgba(255,255,255,0.45); transform: scale(1.1); }
+
+        /* ── Example sentence on card back ───────────────────────── */
+        .card-sentence {
+            font-size: 1.1rem;
+            font-style: italic;
+            opacity: 0.9;
+            margin-top: 16px;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        /* ── Accent helper bar ───────────────────────────────────── */
+        .accent-bar {
+            display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
+            margin-top: 10px;
+        }
+        .accent-key {
+            min-width: 42px; padding: 8px 10px;
+            border: 2px solid #e0e0e0; border-radius: 8px;
+            background: white; font-size: 1.1rem; cursor: pointer;
+            transition: all 0.15s;
+        }
+        .accent-key:hover { border-color: #E34234; background: #fef5f4; }
+
+        /* ── Streak badge ────────────────────────────────────────── */
+        .streak-badge {
+            display: inline-block;
+            margin-top: 10px;
+            background: rgba(0,0,0,0.35);
+            border-radius: 20px;
+            padding: 6px 18px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        /* ── Review heatmap ──────────────────────────────────────── */
+        .heatmap-wrap { overflow-x: auto; padding-bottom: 6px; margin-bottom: 28px; }
+        .heatmap-grid {
+            display: grid;
+            grid-auto-flow: column;
+            grid-template-rows: repeat(7, 13px);
+            gap: 3px;
+            width: max-content;
+        }
+        .heatmap-cell {
+            width: 13px; height: 13px; border-radius: 3px;
+            background: #ebedf0;
+        }
+        .heatmap-legend {
+            display: flex; align-items: center; gap: 4px;
+            font-size: 0.78rem; color: #888; margin-top: 8px;
+        }
+
+        /* ── Deck progress bars (Manage tab) ─────────────────────── */
+        .deck-progress-wrap {
+            background: #e9ecef; border-radius: 6px; height: 10px;
+            margin-top: 8px; overflow: hidden; max-width: 340px;
+        }
+        .deck-progress-bar {
+            height: 100%; border-radius: 6px;
+            background: linear-gradient(90deg, #718652, #28a745);
+            transition: width 0.3s;
+        }
+        .deck-progress-label { font-size: 0.8rem; color: #888; margin-top: 3px; }
+
+        /* ── Dark mode toggle ────────────────────────────────────── */
+        .dark-toggle {
+            position: absolute; top: 0; right: 0;
+            background: rgba(0,0,0,0.35);
+            border: 2px solid rgba(255,255,255,0.4);
+            border-radius: 20px;
+            color: white;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .dark-toggle:hover { background: rgba(0,0,0,0.55); }
+        header { position: relative; }
+
+        /* ── Dark mode overrides ─────────────────────────────────── */
+        body.dark { color-scheme: dark; }
+        body.dark::before { background: rgba(0,0,0,0.55); }
+        body.dark .main-content { background: rgba(24,26,30,0.93); color: #d8dade; }
+        body.dark h2, body.dark h3, body.dark label,
+        body.dark .import-section h3, body.dark .srs-rating-label,
+        body.dark .quiz-question h3, body.dark .vocab-gauge-pct { color: #e3e5e9; }
+        body.dark .tabs { border-bottom-color: #3a3e45; }
+        body.dark .tab { color: #9aa0a8; }
+        body.dark input, body.dark textarea, body.dark select {
+            background: #23262b; border-color: #3a3e45; color: #e3e5e9;
+        }
+        body.dark .import-section, body.dark .srs-rating,
+        body.dark .stat-card, body.dark .vocab-gauge-card { background: #23262b; }
+        body.dark .drop-zone, body.dark .quiz-option, body.dark .search-result-item,
+        body.dark .card-item, body.dark .game-card, body.dark .speed-option,
+        body.dark .match-tile, body.dark .accent-key, body.dark .weak-card-item {
+            background: #23262b; border-color: #3a3e45; color: #d8dade;
+        }
+        body.dark .quiz-option:hover, body.dark .speed-option:hover,
+        body.dark .accent-key:hover, body.dark .drop-zone:hover { background: #2d3138; }
+        body.dark .import-info { background: #1e2a36; color: #7fb3e8; }
+        body.dark .shortcut-hint { background: #242a1e; border-color: #3d4a2e; color: #a8bd85; }
+        body.dark .card-item strong { color: #ff8a7d; }
+        body.dark .stat-card .stat-label, body.dark p { color: #9aa0a8; }
+        body.dark .game-card h3 { color: #e3e5e9; }
+        body.dark .heatmap-cell { background: #2d3138; }
+        body.dark .deck-progress-wrap { background: #2d3138; }
+        body.dark #exportSection { background: #1e2e20 !important; }
+        body.dark #exportSection div { color: #81c784 !important; }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
+            <button class="dark-toggle" id="darkToggle">🌙 Dark</button>
             <h1>📚 Flashcard Study App</h1>
             <p class="subtitle">Master your vocabulary with interactive flashcards</p>
+            <div class="streak-badge" id="streakBadge" style="display:none;"></div>
         </header>
 
         <div class="main-content">
@@ -1104,7 +1229,8 @@
                     </div>
                     <div class="import-info">
                         <strong>📋 Format:</strong> Column A = Front of card (e.g., Spanish), Column B = Back of card (e.g., English)<br>
-                        <strong>✓ Smart Skip:</strong> Rows with "Y" in Column C will be skipped (already learned)
+                        <strong>✓ Smart Skip:</strong> Rows with "Y" in Column C will be skipped (already learned)<br>
+                        <strong>💬 Optional:</strong> Column K = example sentence (shown after flip), Column L = tags (comma-separated, e.g. "verbs, food")
                     </div>
                     <div class="import-status" id="importStatus"></div>
                     <div id="exportSection" style="display: none; margin-top: 15px; padding: 15px; background: #e8f5e9; border-radius: 8px;">
@@ -1168,12 +1294,16 @@
                 </div>
                 <div class="progress" id="studyProgress"></div>
                 <div class="flashcard-container" style="margin-bottom: 260px;">
+                    <button class="speak-btn" id="speakBtnStudy" title="Pronounce (Spanish)">🔊</button>
                     <div class="flashcard" id="flashcard">
                         <div class="card-face card-front">
                             <div class="card-text" id="cardFront"></div>
                         </div>
                         <div class="card-face card-back">
-                            <div class="card-text" id="cardBack"></div>
+                            <div style="display:flex; flex-direction:column; align-items:center;">
+                                <div class="card-text" id="cardBack"></div>
+                                <div class="card-sentence" id="cardSentence"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1217,12 +1347,16 @@
                     <kbd>4</kbd> Easy
                 </div>
                 <div class="flashcard-container" style="margin-bottom: 260px;">
+                    <button class="speak-btn" id="speakBtnSrs" title="Pronounce (Spanish)">🔊</button>
                     <div class="flashcard" id="srsFlashcard">
                         <div class="card-face card-front">
                             <div class="card-text" id="srsFront"></div>
                         </div>
                         <div class="card-face card-back">
-                            <div class="card-text" id="srsBack"></div>
+                            <div style="display:flex; flex-direction:column; align-items:center;">
+                                <div class="card-text" id="srsBack"></div>
+                                <div class="card-sentence" id="srsSentence"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1238,6 +1372,7 @@
                 </div>
                 <div class="controls">
                     <button class="btn btn-primary" id="srsFlipBtn">Flip Card</button>
+                    <button class="btn btn-success" id="srsKnowBtn">✓ I Already Know This</button>
                 </div>
                 <div id="srsDoneMsg" style="display:none; text-align:center; padding:40px;">
                     <div style="font-size:3rem; margin-bottom:16px;">🎉</div>
@@ -1263,6 +1398,17 @@
                 <div class="quiz-options" id="quizOptions"></div>
                 <div class="type-answer-wrap" id="typeAnswerWrap" style="display:none;">
                     <input type="text" id="typeAnswerInput" placeholder="Type your answer…" autocomplete="off">
+                    <div class="accent-bar" id="accentBar">
+                        <button class="accent-key" type="button">á</button>
+                        <button class="accent-key" type="button">é</button>
+                        <button class="accent-key" type="button">í</button>
+                        <button class="accent-key" type="button">ó</button>
+                        <button class="accent-key" type="button">ú</button>
+                        <button class="accent-key" type="button">ñ</button>
+                        <button class="accent-key" type="button">ü</button>
+                        <button class="accent-key" type="button">¿</button>
+                        <button class="accent-key" type="button">¡</button>
+                    </div>
                     <div class="correct-answer-reveal" id="correctAnswerReveal" style="display:none;"></div>
                 </div>
                 <div class="controls">
@@ -1440,6 +1586,19 @@
                     </div>
                 </div>
                 <div class="stats-grid" id="statsGrid"></div>
+                <h3 style="margin-bottom:12px;">📅 Study Activity (last 20 weeks)</h3>
+                <div class="heatmap-wrap">
+                    <div class="heatmap-grid" id="heatmapGrid"></div>
+                    <div class="heatmap-legend">
+                        Less
+                        <span class="heatmap-cell" style="background:#ebedf0;"></span>
+                        <span class="heatmap-cell" style="background:#c6e48b;"></span>
+                        <span class="heatmap-cell" style="background:#7bc96f;"></span>
+                        <span class="heatmap-cell" style="background:#239a3b;"></span>
+                        <span class="heatmap-cell" style="background:#196127;"></span>
+                        More
+                    </div>
+                </div>
                 <h3 style="margin-bottom:12px;">🐢 Weakest Cards (lowest ease)</h3>
                 <div id="weakCards" style="margin-bottom:28px;"></div>
                 <h3 style="margin-bottom:12px;">📋 Quiz History</h3>
@@ -1509,6 +1668,9 @@
                 this.srsFlipped = false;
                 this.activeTab = 'study';
 
+                // Daily study activity log: { 'YYYY-MM-DD': count }
+                this.activityLog = JSON.parse(localStorage.getItem('activityLog')) || {};
+
                 this.init();
             }
 
@@ -1528,8 +1690,118 @@
                 this.setupKeyboard();
                 this.setupSrsMode();
                 this.setupGameMode();
+                this.setupSpeech();
+                this.setupAccentBar();
+                this.setupDarkMode();
                 this.updateCardCount();
                 this.updateDueBadge();
+                this.renderStreakBadge();
+            }
+
+            // ── Text-to-speech (Spanish pronunciation) ─────────────────────
+
+            setupSpeech() {
+                this.spanishVoice = null;
+                const pickVoice = () => {
+                    const voices = speechSynthesis.getVoices();
+                    this.spanishVoice = voices.find(v => v.lang === 'es-ES')
+                        || voices.find(v => v.lang.startsWith('es'))
+                        || null;
+                };
+                pickVoice();
+                speechSynthesis.onvoiceschanged = pickVoice;
+
+                document.getElementById('speakBtnStudy').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const card = this.cards[this.currentIndex];
+                    if (card) this.speak(card.front);
+                });
+                document.getElementById('speakBtnSrs').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const item = this.srsQueue[this.srsIndex];
+                    if (item) this.speak(item.card.front);
+                });
+            }
+
+            speak(text) {
+                if (!('speechSynthesis' in window) || !text) return;
+                speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = 'es-ES';
+                if (this.spanishVoice) u.voice = this.spanishVoice;
+                u.rate = 0.85;
+                speechSynthesis.speak(u);
+            }
+
+            // ── Study streak tracking ───────────────────────────────────────
+
+            todayKey() {
+                const d = new Date();
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            }
+
+            logActivity(n = 1) {
+                const key = this.todayKey();
+                this.activityLog[key] = (this.activityLog[key] || 0) + n;
+                localStorage.setItem('activityLog', JSON.stringify(this.activityLog));
+                this.renderStreakBadge();
+            }
+
+            getStreak() {
+                let streak = 0;
+                const d = new Date();
+                // Today counts if studied; otherwise streak may still be alive from yesterday
+                const fmt = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+                if (!this.activityLog[fmt(d)]) d.setDate(d.getDate() - 1);
+                while (this.activityLog[fmt(d)]) {
+                    streak++;
+                    d.setDate(d.getDate() - 1);
+                }
+                return streak;
+            }
+
+            renderStreakBadge() {
+                const badge = document.getElementById('streakBadge');
+                const streak = this.getStreak();
+                if (streak > 0) {
+                    badge.style.display = '';
+                    badge.textContent = `🔥 ${streak}-day study streak`;
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+
+            // ── Accent helper bar ───────────────────────────────────────────
+
+            setupAccentBar() {
+                const input = document.getElementById('typeAnswerInput');
+                document.querySelectorAll('#accentBar .accent-key').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        if (input.disabled) return;
+                        const ch = btn.textContent;
+                        const start = input.selectionStart ?? input.value.length;
+                        const end = input.selectionEnd ?? input.value.length;
+                        input.value = input.value.slice(0, start) + ch + input.value.slice(end);
+                        input.focus();
+                        input.setSelectionRange(start + 1, start + 1);
+                    });
+                });
+            }
+
+            // ── Dark mode ───────────────────────────────────────────────────
+
+            setupDarkMode() {
+                const btn = document.getElementById('darkToggle');
+                const apply = (dark) => {
+                    document.body.classList.toggle('dark', dark);
+                    btn.textContent = dark ? '☀️ Light' : '🌙 Dark';
+                };
+                apply(localStorage.getItem('darkMode') === '1');
+                btn.addEventListener('click', () => {
+                    const dark = !document.body.classList.contains('dark');
+                    localStorage.setItem('darkMode', dark ? '1' : '0');
+                    apply(dark);
+                });
             }
 
             // ── Keyboard shortcuts ──────────────────────────────────────────
@@ -1685,6 +1957,7 @@
                 }
                 document.getElementById('srsReloadBtn').addEventListener('click', () => this.loadSrsQueue());
                 document.getElementById('srsFlipBtn').addEventListener('click', () => this.srsFlipCard());
+                document.getElementById('srsKnowBtn').addEventListener('click', () => this.srsMarkKnown());
 
                 document.querySelectorAll('[data-srs-rating]').forEach(btn => {
                     btn.addEventListener('click', () => {
@@ -1745,6 +2018,7 @@
                     doneMsg.style.display = 'block';
                     flashcard.parentElement.style.display = 'none';
                     flipBtn.style.display = 'none';
+                    document.getElementById('srsKnowBtn').style.display = 'none';
                     ratingEl.style.removeProperty('display');
                     ratingEl.classList.remove('visible');
                     progress.textContent = '';
@@ -1754,6 +2028,7 @@
                 doneMsg.style.display = 'none';
                 flashcard.parentElement.style.display = '';
                 flipBtn.style.display = '';
+                document.getElementById('srsKnowBtn').style.display = '';
 
                 if (this.srsIndex >= this.srsQueue.length) {
                     this.srsIndex = 0;
@@ -1762,6 +2037,7 @@
                 const { card } = this.srsQueue[this.srsIndex];
                 document.getElementById('srsFront').textContent = card.front;
                 document.getElementById('srsBack').textContent = card.back;
+                document.getElementById('srsSentence').textContent = card.sentence || '';
                 flashcard.classList.remove('flipped');
                 this.srsFlipped = false;
 
@@ -1810,8 +2086,34 @@
                 }
             }
 
+            srsMarkKnown() {
+                if (this.srsQueue.length === 0) return;
+                const { card, deck } = this.srsQueue[this.srsIndex];
+                // Promote straight to mastered: long interval, high repetition count
+                card.srs = {
+                    interval: 60,
+                    repetitions: 8,
+                    easeFactor: Math.max(2.5, card.srs?.easeFactor || 2.5),
+                    nextReview: Date.now() + 60 * 86400000,
+                    lastReviewed: Date.now()
+                };
+                const deckRef = this.decks.find(d => d.id === deck.id);
+                if (deckRef) {
+                    const cardRef = deckRef.cards.find(c => c.id === card.id);
+                    if (cardRef) cardRef.srs = card.srs;
+                }
+                this.saveDecks();
+                this.logActivity();
+                this.srsQueue.splice(this.srsIndex, 1);
+                if (this.srsIndex >= this.srsQueue.length) this.srsIndex = 0;
+                this.showSrsCard();
+                this.updateSrsStats();
+                this.updateDueBadge();
+            }
+
             applyRating(card, deck, rating) {
                 card.srs = sm2(card, rating);
+                this.logActivity();
                 // Persist back into the deck object
                 const deckRef = this.decks.find(d => d.id === deck.id);
                 if (deckRef) {
@@ -1872,14 +2174,16 @@
                 const deckSelector = document.getElementById('deckSelector');
                 const quizDeckSelector = document.getElementById('quizDeckSelector');
 
+                const isVirtual = (v) => v.startsWith('srs:') || v.startsWith('tag:');
+
                 deckSelector.addEventListener('change', (e) => {
                     const v = e.target.value;
-                    this.selectDeck(v.startsWith('srs:') ? v : parseInt(v));
+                    this.selectDeck(isVirtual(v) ? v : parseInt(v));
                 });
 
                 quizDeckSelector.addEventListener('change', (e) => {
                     const v = e.target.value;
-                    this.selectDeck(v.startsWith('srs:') ? v : parseInt(v));
+                    this.selectDeck(isVirtual(v) ? v : parseInt(v));
                 });
 
                 this.renderDeckSelector();
@@ -1901,7 +2205,16 @@
                 }).join('');
                 const levelGroup = `<optgroup label="── By SRS Level ──">${levelOptions}</optgroup>`;
 
-                const full = `<option value="">-- Select a deck --</option>${deckOptions}${levelGroup}`;
+                // Tag groups (from Excel column L)
+                const allTags = [...new Set(this.decks.flatMap(d => d.cards).flatMap(c => c.tags || []))].sort();
+                const tagGroup = allTags.length
+                    ? `<optgroup label="── By Tag ──">${allTags.map(t => {
+                          const count = this.decks.flatMap(d => d.cards).filter(c => c.tags?.includes(t)).length;
+                          return `<option value="tag:${t}">🏷️ ${t} (${count})</option>`;
+                      }).join('')}</optgroup>`
+                    : '';
+
+                const full = `<option value="">-- Select a deck --</option>${deckOptions}${levelGroup}${tagGroup}`;
                 deckSelector.innerHTML = full;
                 quizDeckSelector.innerHTML = full;
                 gameDeckSelector.innerHTML = full;
@@ -1925,9 +2238,23 @@
                 return { id: `srs:${level}`, name: `Level ${level}`, cards, deckNumber: null };
             }
 
+            buildTagDeck(tag) {
+                const cards = this.decks.flatMap(d => d.cards).filter(c => c.tags?.includes(tag));
+                if (!cards.length) return null;
+                return { id: `tag:${tag}`, name: `🏷️ ${tag}`, cards, deckNumber: null };
+            }
+
+            resolveVirtualDeck(v) {
+                v = String(v);
+                if (v.startsWith('srs:')) return this.buildLevelDeck(parseInt(v.split(':')[1]));
+                if (v.startsWith('tag:')) return this.buildTagDeck(v.slice(4));
+                return null;
+            }
+
             selectDeck(deckId) {
-                const deck = String(deckId).startsWith('srs:')
-                    ? this.buildLevelDeck(parseInt(String(deckId).split(':')[1]))
+                const idStr = String(deckId);
+                const deck = (idStr.startsWith('srs:') || idStr.startsWith('tag:'))
+                    ? this.resolveVirtualDeck(idStr)
                     : this.decks.find(d => d.id === deckId);
                 if (deck) {
                     this.currentDeck = deck;
@@ -2096,6 +2423,11 @@
                                     back: String(back).trim(),
                                     originalRowIndex: index
                                 };
+                                // Column K: optional example sentence; Column L: optional comma-separated tags
+                                if (row[10] && String(row[10]).trim()) card.sentence = String(row[10]).trim();
+                                if (row[11] && String(row[11]).trim()) {
+                                    card.tags = String(row[11]).split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+                                }
                                 // Restore SRS progress if the columns are present
                                 if (srsReps !== undefined && srsReps !== '' && !isNaN(srsReps)) {
                                     const nextTs = srsNext ? new Date(String(srsNext)).getTime() : Date.now();
@@ -2309,6 +2641,7 @@
                     document.getElementById('cardFront').textContent = card.front;
                     document.getElementById('cardBack').textContent = card.back;
                 }
+                document.getElementById('cardSentence').textContent = card.sentence || '';
 
                 document.getElementById('studyProgress').textContent =
                     `Card ${this.currentIndex + 1} of ${this.cards.length}` +
@@ -2615,6 +2948,7 @@
                 }
                 revealEl.style.display = 'block';
 
+                this.logActivity();
                 document.getElementById('quizScore').textContent = `Score: ${this.quizScore}/${this.quizTotal}`;
                 document.getElementById('nextQuizCard').style.display = 'block';
             }
@@ -2646,6 +2980,7 @@
                     });
                 }
 
+                this.logActivity();
                 document.getElementById('quizScore').textContent = `Score: ${this.quizScore}/${this.quizTotal}`;
                 document.getElementById('nextQuizCard').style.display = 'block';
             }
@@ -2719,7 +3054,7 @@
             getGameDeck() {
                 const sel = document.getElementById('gameDeckSelector');
                 const v = sel.value;
-                if (v.startsWith('srs:')) return this.buildLevelDeck(parseInt(v.split(':')[1]));
+                if (v.startsWith('srs:') || v.startsWith('tag:')) return this.resolveVirtualDeck(v);
                 const id = parseInt(v);
                 return this.decks.find(d => d.id === id) || null;
             }
@@ -3423,7 +3758,10 @@
                     <div class="stat-card"><div class="stat-value">${dueNow}</div><div class="stat-label">Due Now</div></div>
                     <div class="stat-card"><div class="stat-value">${avgEase}</div><div class="stat-label">Avg Ease Factor</div></div>
                     <div class="stat-card"><div class="stat-value">${avgScore}</div><div class="stat-label">Avg Quiz Score</div></div>
+                    <div class="stat-card"><div class="stat-value">🔥 ${this.getStreak()}</div><div class="stat-label">Day Streak</div></div>
                 `;
+
+                this.renderHeatmap();
 
                 // Weakest cards (reviewed, sorted by ease factor asc)
                 const weakEl = document.getElementById('weakCards');
@@ -3480,6 +3818,30 @@
                 }
             }
 
+            renderHeatmap() {
+                const grid = document.getElementById('heatmapGrid');
+                const weeks = 20;
+                // Start from the Sunday `weeks` ago, end today
+                const today = new Date();
+                const start = new Date(today);
+                start.setDate(start.getDate() - (weeks * 7 - 1) - today.getDay());
+                const fmt = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+                const colours = ['#ebedf0', '#c6e48b', '#7bc96f', '#239a3b', '#196127'];
+                const darkColours = ['#2d3138', '#1e4620', '#2e6b31', '#3f9142', '#57c25b'];
+                const isDark = document.body.classList.contains('dark');
+                const pal = isDark ? darkColours : colours;
+
+                let html = '';
+                const d = new Date(start);
+                while (d <= today) {
+                    const count = this.activityLog[fmt(d)] || 0;
+                    const lvl = count === 0 ? 0 : count < 10 ? 1 : count < 25 ? 2 : count < 50 ? 3 : 4;
+                    html += `<div class="heatmap-cell" style="background:${pal[lvl]}" title="${fmt(d)}: ${count} reviews"></div>`;
+                    d.setDate(d.getDate() + 1);
+                }
+                grid.innerHTML = html;
+            }
+
             setupManageMode() {
                 document.getElementById('clearAll').addEventListener('click', () => {
                     if (confirm('Are you sure you want to delete all decks?')) {
@@ -3510,15 +3872,20 @@
                     return;
                 }
 
-                container.innerHTML = this.decks.map(deck => `
+                container.innerHTML = this.decks.map(deck => {
+                    const mastered = deck.cards.filter(c => c.srs && c.srs.repetitions >= 3).length;
+                    const pct = deck.cards.length ? Math.round(mastered / deck.cards.length * 100) : 0;
+                    return `
                     <div class="card-item">
-                        <div class="card-content">
+                        <div class="card-content" style="flex:1; min-width:0;">
                             <strong>${deck.name}</strong>
                             <div>${deck.cards.length} cards • Created ${new Date(deck.createdAt).toLocaleDateString()}</div>
+                            <div class="deck-progress-wrap"><div class="deck-progress-bar" style="width:${pct}%;"></div></div>
+                            <div class="deck-progress-label">${mastered}/${deck.cards.length} mastered (${pct}%)</div>
                         </div>
                         <button class="btn btn-danger" onclick="app.deleteDeck(${deck.id})">Delete Deck</button>
                     </div>
-                `).join('');
+                `;}).join('');
             }
 
             deleteDeck(id) {
