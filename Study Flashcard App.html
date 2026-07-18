@@ -1286,11 +1286,10 @@
                     </div>
                 </div>
                 <div class="shortcut-hint">
-                    <kbd>Space</kbd> Flip &nbsp;
+                    <kbd>Space</kbd> Flip, then Next &nbsp;
                     <kbd>←</kbd><kbd>→</kbd> Navigate &nbsp;
-                    <kbd>R</kbd> Recycle &nbsp;
-                    <kbd>P</kbd> Pause &nbsp;
-                    <kbd>1</kbd>–<kbd>3</kbd> Rate (after flip)
+                    <kbd>N</kbd> Recycle &nbsp;
+                    <kbd>P</kbd> Pause
                 </div>
                 <div class="progress" id="studyProgress"></div>
                 <div class="flashcard-container" style="margin-bottom: 260px;">
@@ -1305,15 +1304,6 @@
                                 <div class="card-sentence" id="cardSentence"></div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                <div class="srs-rating" id="srsRating">
-                    <div class="srs-rating-label">How well did you know this?</div>
-                    <div class="srs-buttons">
-                        <button class="srs-btn srs-btn-0" data-rating="0">😖 Forgot</button>
-                        <button class="srs-btn srs-btn-1" data-rating="1">😕 Hard</button>
-                        <button class="srs-btn srs-btn-2" data-rating="2">🙂 Good</button>
-                        <button class="srs-btn srs-btn-3" data-rating="3">😄 Easy</button>
                     </div>
                 </div>
                 <div class="controls">
@@ -1815,7 +1805,9 @@
                         switch (e.key) {
                             case ' ':
                                 e.preventDefault();
-                                this.flipCard();
+                                // First press flips; second press advances to the next card
+                                if (this.isFlipped) this.navigateCard(1);
+                                else this.flipCard();
                                 break;
                             case 'ArrowRight':
                             case 'ArrowDown':
@@ -1827,18 +1819,14 @@
                                 e.preventDefault();
                                 this.navigateCard(-1);
                                 break;
-                            case 'r':
-                            case 'R':
+                            case 'n':
+                            case 'N':
                                 this.recycleCard();
                                 break;
                             case 'p':
                             case 'P':
                                 this.toggleTimer();
                                 break;
-                            case '1': if (this.isFlipped) this.rateSrsCard(0, 'study'); break;
-                            case '2': if (this.isFlipped) this.rateSrsCard(1, 'study'); break;
-                            case '3': if (this.isFlipped) this.rateSrsCard(2, 'study'); break;
-                            case '4': if (this.isFlipped) this.rateSrsCard(3, 'study'); break;
                         }
                     } else if (this.activeTab === 'srs') {
                         switch (e.key) {
@@ -1965,11 +1953,6 @@
                     });
                 });
 
-                document.querySelectorAll('[data-rating]').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        this.rateSrsCard(parseInt(btn.dataset.rating), 'study');
-                    });
-                });
             }
 
             getDueCards() {
@@ -2073,16 +2056,6 @@
                     this.showSrsCard();
                     this.updateSrsStats();
                     this.updateDueBadge();
-                } else if (context === 'study') {
-                    if (!this.currentDeck || this.cards.length === 0) return;
-                    const card = this.cards[this.currentIndex];
-                    const deck = this.currentDeck;
-                    this.applyRating(card, deck, rating);
-                    this.updateDueBadge();
-
-                    // Hide rating UI and move to next card
-                    document.getElementById('srsRating').classList.remove('visible');
-                    this.navigateCard(1);
                 }
             }
 
@@ -2263,7 +2236,6 @@
                     this.isFlipped = false;
                     this.cardsCompletedThisRun = new Set();
                     document.getElementById('flashcard').classList.remove('flipped');
-                    document.getElementById('srsRating').classList.remove('visible');
                     this.showCard();
                     this.updateCardCount();
                     this.startTimer();
@@ -2593,13 +2565,6 @@
                 const flashcard = document.getElementById('flashcard');
                 this.isFlipped = !this.isFlipped;
                 flashcard.classList.toggle('flipped');
-
-                // Show SRS rating panel after flip
-                if (this.isFlipped && this.currentDeck) {
-                    document.getElementById('srsRating').classList.add('visible');
-                } else {
-                    document.getElementById('srsRating').classList.remove('visible');
-                }
             }
 
             navigateCard(direction) {
@@ -2612,9 +2577,7 @@
                 if (this.currentIndex >= this.cards.length) this.currentIndex = 0;
 
                 this.isFlipped = false;
-                document.getElementById('flashcard').classList.remove('flipped');
-                document.getElementById('srsRating').classList.remove('visible');
-                this.showCard();
+                document.getElementById('flashcard').classList.remove('flipped');                this.showCard();
             }
 
             showCard() {
@@ -2667,8 +2630,6 @@
 
                 this.isFlipped = false;
                 document.getElementById('flashcard').classList.remove('flipped');
-                document.getElementById('srsRating').classList.remove('visible');
-
                 if (this.currentIndex >= this.cards.length) this.currentIndex = 0;
 
                 this.showCard();
@@ -2848,9 +2809,7 @@
                 this.cardsCompletedThisRun = new Set();
                 this.currentIndex = 0;
                 this.isFlipped = false;
-                document.getElementById('flashcard').classList.remove('flipped');
-                document.getElementById('srsRating').classList.remove('visible');
-                this.startTimer();
+                document.getElementById('flashcard').classList.remove('flipped');                this.startTimer();
                 this.showCard();
                 this.displayBestTime();
 
