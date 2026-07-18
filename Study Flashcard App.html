@@ -2797,10 +2797,40 @@
                         alert(`✅ Deck Complete! (${modeText})\n\nYour Time: ${this.formatTime(finalTime)}\nBest Time: ${this.formatTime(this.currentDeck[timeKey])}`);
                     }
 
+                    this.checkSpeedMastery();
+
                     this.shuffleDeck();
                     this.cardsCompletedThisRun = new Set();
                     this.currentIndex = 0;
                     this.startTimer();
+                }
+            }
+
+            // If a deck's best time is ≤ 20s in BOTH directions, every card in it is mastered
+            checkSpeedMastery() {
+                const MASTERY_TIME = 20; // seconds
+                const deckRef = this.decks.find(d => d.id === this.currentDeck?.id);
+                if (!deckRef) return; // virtual (level/tag) decks don't qualify
+                if (deckRef.bestTimeFront == null || deckRef.bestTimeBack == null) return;
+                if (deckRef.bestTimeFront > MASTERY_TIME || deckRef.bestTimeBack > MASTERY_TIME) return;
+
+                let promoted = 0;
+                deckRef.cards.forEach(card => {
+                    if (card.srs && card.srs.repetitions >= 8) return; // already mastered
+                    card.srs = {
+                        interval: 60,
+                        repetitions: 8,
+                        easeFactor: Math.max(2.5, card.srs?.easeFactor || 2.5),
+                        nextReview: Date.now() + 60 * 86400000,
+                        lastReviewed: Date.now()
+                    };
+                    promoted++;
+                });
+                if (promoted > 0) {
+                    this.saveDecks();
+                    this.updateDueBadge();
+                    this.logActivity(promoted);
+                    alert(`🏆 SPEED MASTERY!\n\nYou completed this deck in under ${MASTERY_TIME} seconds in both directions.\nAll ${deckRef.cards.length} cards are now marked as mastered!`);
                 }
             }
 
