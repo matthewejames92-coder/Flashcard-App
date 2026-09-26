@@ -7,6 +7,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/svg2pdf.js/2.2.3/svg2pdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script type="module">
     import * as docxLib from 'https://esm.sh/docx@8.5.0';
     window.docxLib = docxLib;
@@ -173,6 +175,44 @@
         background:#eef4e5; padding:14px; border-radius:8px; font-size:0.88rem; color:#4a5a3a;
         margin-bottom:14px;
     }
+
+    /* ── Duplicate warning ─────────────────────────────────── */
+    .dup-warning {
+        background:#fdf1dc; border:1px solid #e0b25a; border-radius:8px; padding:12px 14px;
+        margin:14px 0; font-size:0.9rem; color:#7a5a1a;
+    }
+    .dup-warning strong { display:block; margin-bottom:4px; }
+    .dup-warning ul { margin:6px 0 0 20px; }
+
+    /* ── Relationship result ──────────────────────────────── */
+    .relate-result-card {
+        background:#fffdf8; border:1px solid #e3d4b2; border-radius:10px; padding:18px 20px;
+        font-size:1.02rem; line-height:1.5;
+    }
+
+    /* ── Album ─────────────────────────────────────────────── */
+    .album-grid {
+        display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:14px;
+    }
+    .album-item {
+        background:#fffdf8; border:1px solid #e3d4b2; border-radius:10px; overflow:hidden;
+        display:flex; flex-direction:column;
+    }
+    .album-item img { width:100%; height:130px; object-fit:cover; display:block; }
+    .album-item-body { padding:8px 10px; }
+    .album-caption { font-size:0.82rem; color:#5a4a30; min-height:1.2em; margin-bottom:6px; }
+    .album-item-actions { display:flex; gap:6px; flex-wrap:wrap; }
+    .album-item-actions button { font-size:0.72rem; padding:4px 8px; }
+    .album-item.is-primary { border-color:var(--gold); box-shadow:0 0 0 2px rgba(184,134,11,0.25); }
+    .album-primary-tag {
+        font-size:0.7rem; font-weight:700; color:var(--gold); text-transform:uppercase;
+        letter-spacing:0.5px; margin-bottom:4px;
+    }
+
+    /* ── Map ───────────────────────────────────────────────── */
+    #familyMap {
+        width:100%; height:60vh; min-height:380px; border-radius:12px; border:2px solid #e3d4b2;
+    }
 </style>
 </head>
 <body>
@@ -187,6 +227,9 @@
             <button class="tab active" data-tab="tree">🌳 Tree View</button>
             <button class="tab" data-tab="people">👥 People</button>
             <button class="tab" data-tab="add">➕ Add Person</button>
+            <button class="tab" data-tab="relate">🔗 How Are We Related?</button>
+            <button class="tab" data-tab="album">📷 Album</button>
+            <button class="tab" data-tab="map">🗺️ Map</button>
             <button class="tab" data-tab="backup">💾 Backup</button>
         </div>
 
@@ -264,6 +307,8 @@
                     <textarea id="addNotes" placeholder="Anything worth remembering…"></textarea>
                 </div>
 
+                <div id="dupWarning"></div>
+
                 <h3 style="margin-top:20px;">Relationship (optional)</h3>
                 <div class="form-grid">
                     <div class="form-row">
@@ -286,6 +331,56 @@
                     <button type="submit" class="btn btn-primary">Add Person</button>
                 </div>
             </form>
+        </div>
+
+        <!-- Relationship Calculator -->
+        <div class="tab-content" id="relate">
+            <h2 style="margin-bottom:8px;">🔗 How Are We Related?</h2>
+            <p style="margin-bottom:16px; color:#6b5a3d;">Pick two people to find their exact relationship.</p>
+            <div class="form-grid">
+                <div class="form-row">
+                    <label>Person A</label>
+                    <select id="relatePersonA"><option value="">— select —</option></select>
+                </div>
+                <div class="form-row">
+                    <label>Person B</label>
+                    <select id="relatePersonB"><option value="">— select —</option></select>
+                </div>
+            </div>
+            <button class="btn btn-gold" id="relateCalcBtn">Calculate Relationship</button>
+            <div id="relateResult" style="margin-top:18px;"></div>
+        </div>
+
+        <!-- Family Album -->
+        <div class="tab-content" id="album">
+            <h2 style="margin-bottom:8px;">📷 Family Album</h2>
+            <div class="form-row" style="max-width:340px; margin-bottom:16px;">
+                <label>Person</label>
+                <select id="albumPersonSelector"><option value="">— select a person —</option></select>
+            </div>
+            <div id="albumAddRow" style="display:none; margin-bottom:20px;">
+                <div class="form-grid">
+                    <div class="form-row">
+                        <label>Add a Photo</label>
+                        <input type="file" id="albumPhotoInput" accept="image/*">
+                    </div>
+                    <div class="form-row">
+                        <label>Caption</label>
+                        <input type="text" id="albumCaptionInput" placeholder="e.g., Wedding day, 1978">
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-small" id="albumAddBtn" style="margin-top:8px;">➕ Add to Album</button>
+            </div>
+            <div id="albumGrid" class="album-grid"></div>
+        </div>
+
+        <!-- Map View -->
+        <div class="tab-content" id="map">
+            <h2 style="margin-bottom:8px;">🗺️ Family Map</h2>
+            <p style="margin-bottom:14px; color:#6b5a3d;">Birthplaces of everyone in your tree.</p>
+            <div id="mapStatus" style="margin-bottom:10px; color:#8a7a5d; font-size:0.9rem;"></div>
+            <div id="familyMap"></div>
+            <div id="mapPlacesList" style="margin-top:16px;"></div>
         </div>
 
         <!-- Backup -->
@@ -330,6 +425,7 @@ class FamilyTreeApp {
             this.people = this.seedData();
             this.focusId = this.people[0].id;
         }
+        this.people.forEach(p => { if (!Array.isArray(p.photos)) p.photos = []; }); // back-fill older saves
         this.scale = 1;
         this.panX = 0;
         this.panY = 0;
@@ -341,13 +437,13 @@ class FamilyTreeApp {
 
     seedData() {
         const me = { id: uid(), firstName: 'Matthew', lastName: 'James', middleName: 'Edward', gender: 'M',
-            birthDate: '', deathDate: '', birthPlace: '', notes: '', photo: '',
+            birthDate: '', deathDate: '', birthPlace: '', notes: '', photo: '', photos: [],
             parentIds: [], spouseIds: [], childIds: [] };
         const mom = { id: uid(), firstName: 'Alma', lastName: 'Faircloth', middleName: 'Lou', gender: 'F',
-            birthDate: '', deathDate: '', birthPlace: '', notes: '', photo: '',
+            birthDate: '', deathDate: '', birthPlace: '', notes: '', photo: '', photos: [],
             parentIds: [], spouseIds: [], childIds: [] };
         const dad = { id: uid(), firstName: 'Gary', lastName: 'James', middleName: 'Edward', gender: 'M',
-            birthDate: '', deathDate: '', birthPlace: '', notes: '', photo: '',
+            birthDate: '', deathDate: '', birthPlace: '', notes: '', photo: '', photos: [],
             parentIds: [], spouseIds: [], childIds: [] };
         me.parentIds = [mom.id, dad.id];
         mom.spouseIds = [dad.id];
@@ -384,6 +480,8 @@ class FamilyTreeApp {
         this.setupAddForm();
         this.setupBackup();
         this.setupTreeControls();
+        this.setupRelationshipTab();
+        this.setupAlbumTab();
         this.renderAll();
     }
 
@@ -392,6 +490,8 @@ class FamilyTreeApp {
         this.renderTree();
         this.renderPeopleList();
         this.renderRelTargetSelect();
+        this.renderRelateSelectors();
+        this.renderAlbumPersonSelector();
     }
 
     // ── Tabs ────────────────────────────────────────────────
@@ -405,6 +505,9 @@ class FamilyTreeApp {
                 if (tab.dataset.tab === 'tree') this.renderTree();
                 if (tab.dataset.tab === 'people') this.renderPeopleList();
                 if (tab.dataset.tab === 'add') this.renderRelTargetSelect();
+                if (tab.dataset.tab === 'relate') this.renderRelateSelectors();
+                if (tab.dataset.tab === 'album') this.renderAlbumPersonSelector();
+                if (tab.dataset.tab === 'map') this.renderMap();
             });
         });
     }
@@ -484,20 +587,34 @@ class FamilyTreeApp {
             reader.readAsDataURL(file);
         });
 
+        ['addFirstName', 'addLastName', 'addBirthDate'].forEach(id => {
+            document.getElementById(id).addEventListener('input', () => this.renderDupWarning());
+        });
+
         document.getElementById('addPersonForm').addEventListener('submit', (e) => {
             e.preventDefault();
             const firstName = document.getElementById('addFirstName').value.trim();
             if (!firstName) return;
+            const lastName = document.getElementById('addLastName').value.trim();
+            const birthDate = document.getElementById('addBirthDate').value;
+
+            const dupes = this.findPossibleDuplicates(firstName, lastName, birthDate);
+            if (dupes.length) {
+                const names = dupes.map(d => `${this.fullName(d.person)}${d.person.birthDate ? ' (b. ' + d.person.birthDate.slice(0, 4) + ')' : ''}`).join(', ');
+                if (!confirm(`This looks like it might already be in your tree: ${names}.\n\nAdd as a new person anyway?`)) return;
+            }
+
             const person = {
                 id: uid(),
                 firstName,
-                lastName: document.getElementById('addLastName').value.trim(),
+                lastName,
                 gender: document.getElementById('addGender').value,
-                birthDate: document.getElementById('addBirthDate').value,
+                birthDate,
                 deathDate: document.getElementById('addDeathDate').value,
                 birthPlace: document.getElementById('addBirthPlace').value.trim(),
                 notes: document.getElementById('addNotes').value.trim(),
                 photo: this._addPhotoData,
+                photos: this._addPhotoData ? [{ id: uid(), data: this._addPhotoData, caption: '' }] : [],
                 parentIds: [], spouseIds: [], childIds: []
             };
             this.people.push(person);
@@ -513,6 +630,7 @@ class FamilyTreeApp {
             document.getElementById('addPersonForm').reset();
             preview.innerHTML = '👤';
             this._addPhotoData = '';
+            document.getElementById('dupWarning').innerHTML = '';
 
             document.querySelector('.tab[data-tab="tree"]').click();
         });
@@ -525,6 +643,301 @@ class FamilyTreeApp {
             this.people.slice().sort((a, b) => this.fullName(a).localeCompare(this.fullName(b)))
                 .map(p => `<option value="${p.id}">${this.fullName(p)}</option>`).join('');
         sel.value = current;
+    }
+
+    // ── Duplicate / conflict detector ───────────────────────────
+    normalizeName(s) {
+        return String(s || '').toLowerCase().trim().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ');
+    }
+
+    levenshtein(a, b) {
+        const m = a.length, n = b.length;
+        if (!m) return n;
+        if (!n) return m;
+        const dp = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+        for (let j = 0; j <= n; j++) dp[0][j] = j;
+        for (let i = 1; i <= m; i++) {
+            for (let j = 1; j <= n; j++) {
+                dp[i][j] = a[i - 1] === b[j - 1]
+                    ? dp[i - 1][j - 1]
+                    : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
+            }
+        }
+        return dp[m][n];
+    }
+
+    findPossibleDuplicates(firstName, lastName, birthDate, excludeId = null) {
+        const target = this.normalizeName(`${firstName} ${lastName}`);
+        if (!target) return [];
+        const targetYear = birthDate ? birthDate.slice(0, 4) : '';
+        const matches = [];
+        this.people.forEach(p => {
+            if (p.id === excludeId) return;
+            const candidate = this.normalizeName(this.fullName(p).replace(p.middleName || '', '').trim());
+            if (!candidate) return;
+            const dist = this.levenshtein(target, candidate);
+            const threshold = Math.max(1, Math.floor(Math.max(target.length, candidate.length) * 0.2));
+            const nameMatch = dist <= threshold;
+            if (!nameMatch) return;
+            const pYear = p.birthDate ? p.birthDate.slice(0, 4) : '';
+            const yearMatch = targetYear && pYear ? targetYear === pYear : null; // null = unknown/unset either side
+            if (yearMatch === false) return; // known different birth years — not a duplicate
+            matches.push({ person: p, exact: dist === 0, yearMatch });
+        });
+        return matches;
+    }
+
+    renderDupWarning() {
+        const box = document.getElementById('dupWarning');
+        const firstName = document.getElementById('addFirstName').value.trim();
+        const lastName = document.getElementById('addLastName').value.trim();
+        const birthDate = document.getElementById('addBirthDate').value;
+        if (!firstName) { box.innerHTML = ''; return; }
+        const dupes = this.findPossibleDuplicates(firstName, lastName, birthDate);
+        if (!dupes.length) { box.innerHTML = ''; return; }
+        box.innerHTML = `
+            <div class="dup-warning">
+                <strong>⚠️ Possible duplicate — this person may already be in your tree:</strong>
+                <ul>${dupes.map(d => `<li>${this.fullName(d.person)}${d.person.birthDate ? ' (b. ' + d.person.birthDate.slice(0, 4) + ')' : ''}</li>`).join('')}</ul>
+            </div>`;
+    }
+
+    // ── Relationship calculator ─────────────────────────────────
+    climbAncestors(id) {
+        const map = new Map([[id, 0]]);
+        const queue = [[id, 0]];
+        while (queue.length) {
+            const [cur, d] = queue.shift();
+            const p = this.getPerson(cur);
+            if (!p) continue;
+            p.parentIds.forEach(pid => {
+                const nd = d + 1;
+                if (!map.has(pid) || map.get(pid) > nd) { map.set(pid, nd); queue.push([pid, nd]); }
+            });
+        }
+        return map;
+    }
+
+    ordinal(n) {
+        const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+        return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    }
+
+    ascentTerm(n, gender) {
+        const base = gender === 'M' ? 'father' : gender === 'F' ? 'mother' : 'parent';
+        const gbase = gender === 'M' ? 'grandfather' : gender === 'F' ? 'grandmother' : 'grandparent';
+        if (n === 1) return base;
+        if (n === 2) return gbase;
+        return 'great-'.repeat(n - 2) + gbase;
+    }
+
+    descentTerm(n, gender) {
+        const base = gender === 'M' ? 'son' : gender === 'F' ? 'daughter' : 'child';
+        const gbase = gender === 'M' ? 'grandson' : gender === 'F' ? 'granddaughter' : 'grandchild';
+        if (n === 1) return base;
+        if (n === 2) return gbase;
+        return 'great-'.repeat(n - 2) + gbase;
+    }
+
+    bloodRelation(idA, idB) {
+        const A = this.getPerson(idA), B = this.getPerson(idB);
+        if (!A || !B) return null;
+        const ancA = this.climbAncestors(idA);
+        const ancB = this.climbAncestors(idB);
+        let best = null;
+        ancA.forEach((dA, id) => {
+            if (ancB.has(id)) {
+                const dB = ancB.get(id);
+                const sum = dA + dB;
+                if (!best || sum < best.sum) best = { dA, dB, sum };
+            }
+        });
+        if (!best) return null;
+        const { dA, dB } = best;
+
+        if (dA === 0 || dB === 0) {
+            const n = dA === 0 ? dB : dA;
+            const ancestorPerson = dA === 0 ? A : B;
+            const descendantPerson = dA === 0 ? B : A;
+            if (n === 0) return null; // same person, handled elsewhere
+            return `${this.fullName(descendantPerson)} is ${this.fullName(ancestorPerson)}'s ${this.descentTerm(n, descendantPerson.gender)} `
+                + `(${this.fullName(ancestorPerson)} is ${this.fullName(descendantPerson)}'s ${this.ascentTerm(n, ancestorPerson.gender)}).`;
+        }
+
+        const minD = Math.min(dA, dB), maxD = Math.max(dA, dB), removed = maxD - minD;
+        const nearPerson = dA < dB ? A : B, farPerson = dA < dB ? B : A;
+
+        if (minD === 1) {
+            if (removed === 0) {
+                const shared = A.parentIds.filter(pid => B.parentIds.includes(pid)).length;
+                const kind = shared >= 2 ? 'full siblings' : 'half-siblings';
+                return `${this.fullName(A)} and ${this.fullName(B)} are ${kind}.`;
+            }
+            const greats = Math.max(0, removed - 1);
+            const prefix = 'great-'.repeat(greats);
+            const auntUncle = nearPerson.gender === 'M' ? 'uncle' : nearPerson.gender === 'F' ? 'aunt' : 'aunt/uncle';
+            const nieceNephew = farPerson.gender === 'M' ? 'nephew' : farPerson.gender === 'F' ? 'niece' : 'niece/nephew';
+            return `${this.fullName(nearPerson)} is ${this.fullName(farPerson)}'s ${prefix}${auntUncle} `
+                + `(${this.fullName(farPerson)} is ${this.fullName(nearPerson)}'s ${prefix}${nieceNephew}).`;
+        }
+
+        const degree = minD - 1;
+        const removedText = removed > 0 ? ` ${removed} time${removed > 1 ? 's' : ''} removed` : '';
+        return `${this.fullName(A)} and ${this.fullName(B)} are ${this.ordinal(degree)} cousins${removedText}.`;
+    }
+
+    describeRelationship(idA, idB) {
+        if (!idA || !idB) return 'Pick two people first.';
+        if (idA === idB) return 'That\'s the same person!';
+        const A = this.getPerson(idA), B = this.getPerson(idB);
+        if (!A || !B) return 'Person not found.';
+
+        if (A.spouseIds.includes(idB)) return `${this.fullName(A)} and ${this.fullName(B)} are married.`;
+
+        const direct = this.bloodRelation(idA, idB);
+        if (direct) return direct;
+
+        for (const sid of A.spouseIds) {
+            const rel = this.bloodRelation(sid, idB);
+            if (rel) return `${this.fullName(A)} is related to ${this.fullName(B)} by marriage — `
+                + `${this.fullName(A)}'s spouse ${this.fullName(this.getPerson(sid))}: ${rel}`;
+        }
+        for (const sid of B.spouseIds) {
+            const rel = this.bloodRelation(sid, idA);
+            if (rel) return `${this.fullName(B)} is related to ${this.fullName(A)} by marriage — `
+                + `${this.fullName(B)}'s spouse ${this.fullName(this.getPerson(sid))}: ${rel}`;
+        }
+
+        return `No relationship found between ${this.fullName(A)} and ${this.fullName(B)} in this tree.`;
+    }
+
+    setupRelationshipTab() {
+        document.getElementById('relateCalcBtn').addEventListener('click', () => {
+            const idA = document.getElementById('relatePersonA').value;
+            const idB = document.getElementById('relatePersonB').value;
+            const result = document.getElementById('relateResult');
+            if (!idA || !idB) {
+                result.innerHTML = '<p style="color:#a83232;">Please select both people.</p>';
+                return;
+            }
+            result.innerHTML = `<div class="relate-result-card">${this.describeRelationship(idA, idB)}</div>`;
+        });
+    }
+
+    renderRelateSelectors() {
+        const options = '<option value="">— select —</option>' +
+            this.people.slice().sort((a, b) => this.fullName(a).localeCompare(this.fullName(b)))
+                .map(p => `<option value="${p.id}">${this.fullName(p)}</option>`).join('');
+        ['relatePersonA', 'relatePersonB'].forEach(id => {
+            const sel = document.getElementById(id);
+            const current = sel.value;
+            sel.innerHTML = options;
+            sel.value = current;
+        });
+    }
+
+    // ── Family Album ─────────────────────────────────────────────
+    setupAlbumTab() {
+        const personSel = document.getElementById('albumPersonSelector');
+        personSel.addEventListener('change', () => this.renderAlbumGrid(personSel.value));
+
+        const photoInput = document.getElementById('albumPhotoInput');
+        this._albumPhotoData = '';
+        photoInput.addEventListener('change', () => {
+            const file = photoInput.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => { this._albumPhotoData = e.target.result; };
+            reader.readAsDataURL(file);
+        });
+
+        document.getElementById('albumAddBtn').addEventListener('click', () => {
+            const personId = personSel.value;
+            if (!personId) return;
+            if (!this._albumPhotoData) { alert('Choose a photo file first.'); return; }
+            const p = this.getPerson(personId);
+            if (!p) return;
+            const caption = document.getElementById('albumCaptionInput').value.trim();
+            const entry = { id: uid(), data: this._albumPhotoData, caption };
+            p.photos.push(entry);
+            if (!p.photo) p.photo = entry.data; // first photo ever becomes the profile picture
+            this.save();
+            this._albumPhotoData = '';
+            photoInput.value = '';
+            document.getElementById('albumCaptionInput').value = '';
+            this.renderAlbumGrid(personId);
+            this.renderTree();
+            this.renderPeopleList();
+        });
+    }
+
+    renderAlbumPersonSelector() {
+        const sel = document.getElementById('albumPersonSelector');
+        const current = sel.value;
+        sel.innerHTML = '<option value="">— select a person —</option>' +
+            this.people.slice().sort((a, b) => this.fullName(a).localeCompare(this.fullName(b)))
+                .map(p => `<option value="${p.id}">${this.fullName(p)}</option>`).join('');
+        sel.value = current;
+        this.renderAlbumGrid(sel.value);
+    }
+
+    renderAlbumGrid(personId) {
+        const grid = document.getElementById('albumGrid');
+        const addRow = document.getElementById('albumAddRow');
+        if (!personId) {
+            grid.innerHTML = '<p style="color:#8a7a5d; padding:20px;">Select a person above to view or add photos.</p>';
+            addRow.style.display = 'none';
+            return;
+        }
+        const p = this.getPerson(personId);
+        if (!p) { grid.innerHTML = ''; addRow.style.display = 'none'; return; }
+        addRow.style.display = '';
+
+        if (!p.photos.length) {
+            grid.innerHTML = `<p style="color:#8a7a5d; padding:20px;">No photos of ${this.fullName(p)} yet. Add the first one above.</p>`;
+            return;
+        }
+
+        grid.innerHTML = p.photos.map(photo => {
+            const isPrimary = p.photo === photo.data;
+            return `
+                <div class="album-item${isPrimary ? ' is-primary' : ''}">
+                    <img src="${photo.data}" alt="${this.escapeXml(this.fullName(p))}">
+                    <div class="album-item-body">
+                        ${isPrimary ? '<div class="album-primary-tag">★ Profile Photo</div>' : ''}
+                        <div class="album-caption">${this.escapeXml(photo.caption) || '<em style="color:#b0a480;">No caption</em>'}</div>
+                        <div class="album-item-actions">
+                            ${isPrimary ? '' : `<button class="btn btn-secondary" data-set-primary="${photo.id}">Set as Profile</button>`}
+                            <button class="btn btn-danger" data-delete-photo="${photo.id}">Delete</button>
+                        </div>
+                    </div>
+                </div>`;
+        }).join('');
+
+        grid.querySelectorAll('[data-set-primary]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const photo = p.photos.find(ph => ph.id === btn.dataset.setPrimary);
+                if (!photo) return;
+                p.photo = photo.data;
+                this.save();
+                this.renderAlbumGrid(personId);
+                this.renderTree();
+                this.renderPeopleList();
+            });
+        });
+        grid.querySelectorAll('[data-delete-photo]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const photo = p.photos.find(ph => ph.id === btn.dataset.deletePhoto);
+                if (!photo || !confirm('Delete this photo?')) return;
+                const wasPrimary = p.photo === photo.data;
+                p.photos = p.photos.filter(ph => ph.id !== photo.id);
+                if (wasPrimary) p.photo = p.photos[0]?.data || '';
+                this.save();
+                this.renderAlbumGrid(personId);
+                this.renderTree();
+                this.renderPeopleList();
+            });
+        });
     }
 
     // ── Tree rendering ────────────────────────────────────────
@@ -1335,6 +1748,97 @@ class FamilyTreeApp {
             document.getElementById('modalOverlay').classList.remove('open');
             this.deletePerson(personId);
         });
+    }
+
+    // ── Map view ─────────────────────────────────────────────────
+    async geocodePlace(place) {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(place)}`;
+        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) throw new Error('geocode failed');
+        const data = await res.json();
+        if (!data.length) return null;
+        return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+    }
+
+    addPlaceMarker(label, coords) {
+        if (!coords || coords === 'notfound' || coords === 'error') return;
+        const peopleHere = this.people.filter(p => this.normalizeName(p.birthPlace) === this.normalizeName(label));
+        if (!peopleHere.length) return;
+        const marker = L.marker([coords.lat, coords.lon]).addTo(this._markerLayer);
+        marker.bindPopup(`<strong>${this.escapeXml(label)}</strong><br>${peopleHere.map(p => this.escapeXml(this.fullName(p))).join('<br>')}`);
+    }
+
+    async geocodeQueue(places) {
+        for (let i = 0; i < places.length; i++) {
+            const place = places[i];
+            const statusEl = document.getElementById('mapStatus');
+            if (statusEl) statusEl.textContent = `Locating ${i + 1} of ${places.length} place${places.length > 1 ? 's' : ''}…`;
+            try {
+                const coords = await this.geocodePlace(place);
+                this.geocodeCache[place] = coords || 'notfound';
+            } catch {
+                this.geocodeCache[place] = 'error';
+            }
+            localStorage.setItem('geocodeCache', JSON.stringify(this.geocodeCache));
+            this.addPlaceMarker(place, this.geocodeCache[place]);
+            if (i < places.length - 1) await new Promise(r => setTimeout(r, 1100)); // respect Nominatim's 1 req/sec usage policy
+        }
+        const statusEl = document.getElementById('mapStatus');
+        if (statusEl) statusEl.textContent = '';
+    }
+
+    renderMap() {
+        if (!window.L) {
+            const statusEl = document.getElementById('mapStatus');
+            if (statusEl) statusEl.textContent = 'Map library failed to load — check your internet connection and try again.';
+            return;
+        }
+        if (!this.geocodeCache) {
+            this.geocodeCache = JSON.parse(localStorage.getItem('geocodeCache') || '{}');
+        }
+
+        const placesMap = new Map(); // normalized key -> { label, people[] }
+        this.people.forEach(p => {
+            if (!p.birthPlace || !p.birthPlace.trim()) return;
+            const key = this.normalizeName(p.birthPlace);
+            if (!placesMap.has(key)) placesMap.set(key, { label: p.birthPlace.trim(), people: [] });
+            placesMap.get(key).people.push(p);
+        });
+
+        const listEl = document.getElementById('mapPlacesList');
+        if (!placesMap.size) {
+            listEl.innerHTML = '<p style="color:#8a7a5d;">No birthplaces recorded yet. Add a birthplace when adding or editing someone to see them here.</p>';
+        } else {
+            listEl.innerHTML = '<h3 style="margin-bottom:10px;">Places</h3>' + [...placesMap.values()]
+                .sort((a, b) => b.people.length - a.people.length)
+                .map(g => `<div style="margin-bottom:6px;"><strong>${this.escapeXml(g.label)}</strong> — ${g.people.map(p => this.escapeXml(this.fullName(p))).join(', ')}</div>`)
+                .join('');
+        }
+
+        if (!this._leafletMap) {
+            this._leafletMap = L.map('familyMap').setView([30, 0], 2);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors',
+                maxZoom: 18
+            }).addTo(this._leafletMap);
+            this._markerLayer = L.layerGroup().addTo(this._leafletMap);
+        } else {
+            this._markerLayer.clearLayers();
+            setTimeout(() => this._leafletMap.invalidateSize(), 50);
+        }
+
+        const toGeocode = [];
+        placesMap.forEach(g => {
+            const cached = this.geocodeCache[g.label];
+            if (cached && cached !== 'error') this.addPlaceMarker(g.label, cached);
+            else if (!cached) toGeocode.push(g.label);
+        });
+
+        if (toGeocode.length) this.geocodeQueue(toGeocode);
+        else {
+            const statusEl = document.getElementById('mapStatus');
+            if (statusEl) statusEl.textContent = '';
+        }
     }
 
     // ── Backup ─────────────────────────────────────────────────
