@@ -7,6 +7,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/svg2pdf.js/2.2.3/svg2pdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script type="module">
+    import * as docxLib from 'https://esm.sh/docx@8.5.0';
+    window.docxLib = docxLib;
+</script>
 <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     :root {
@@ -193,6 +197,7 @@
                 <input type="text" id="treeSearch" placeholder="Search people…">
                 <div class="spacer"></div>
                 <button class="btn btn-secondary btn-small" id="exportPdfBtn">📄 Export Chart (PDF)</button>
+                <button class="btn btn-secondary btn-small" id="exportWordBtn">📝 Export Report (Word)</button>
                 <button class="btn btn-secondary btn-small" id="exportExcelBtn">📊 Export Data (Excel)</button>
                 <div class="zoom-controls">
                     <button id="zoomOut" title="Zoom out">−</button>
@@ -856,6 +861,120 @@ class FamilyTreeApp {
         }
     }
 
+    // ── Word export: person-by-person written report ──────────
+    buildWordReportDoc(docxLib) {
+        const {
+            Document, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell,
+            WidthType, ShadingType, BorderStyle, AlignmentType
+        } = docxLib;
+        const BROWN = '6B4226', GOLD = 'B8860B', LIGHT = 'F7ECD9';
+
+        const rule = () => new Paragraph({
+            border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: GOLD, space: 4 } },
+            spacing: { after: 200 }
+        });
+        const personHeading = (name) => new Paragraph({
+            heading: HeadingLevel.HEADING_1,
+            spacing: { before: 300, after: 120 },
+            children: [new TextRun({ text: name, color: BROWN, bold: true })]
+        });
+        const factRow = (label, value) => new TableRow({
+            children: [
+                new TableCell({
+                    width: { size: 2400, type: WidthType.DXA },
+                    shading: { type: ShadingType.CLEAR, fill: LIGHT },
+                    children: [new Paragraph({ children: [new TextRun({ text: label, bold: true })] })]
+                }),
+                new TableCell({
+                    width: { size: 6600, type: WidthType.DXA },
+                    children: [new Paragraph({ children: [new TextRun({ text: value || '—' })] })]
+                })
+            ]
+        });
+        const factTable = (rows) => new Table({
+            width: { size: 9000, type: WidthType.DXA },
+            columnWidths: [2400, 6600],
+            rows
+        });
+
+        const nameList = (ids) => ids.map(id => this.fullName(this.getPerson(id))).filter(Boolean).join(', ') || '—';
+        const childrenOf = (id) => this.people.filter(p => p.parentIds.includes(id)).map(p => p.id);
+        const genderLabel = (g) => g === 'M' ? 'Male' : g === 'F' ? 'Female' : 'Unknown';
+
+        const sorted = this.people.slice().sort((a, b) => this.fullName(a).localeCompare(this.fullName(b)));
+
+        const bodyChildren = [
+            new Paragraph({
+                alignment: AlignmentType.CENTER,
+                heading: HeadingLevel.TITLE,
+                children: [new TextRun({ text: 'Family History Report', color: BROWN, bold: true })]
+            }),
+            new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 100 },
+                children: [new TextRun({ text: 'Generated from Family Tree App', italics: true, color: '7A6A4D' })]
+            }),
+            new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 300 },
+                children: [new TextRun({
+                    text: `Focus person: ${this.fullName(this.getPerson(this.focusId))}  •  ${new Date().toLocaleDateString()}`,
+                    color: '7A6A4D'
+                })]
+            }),
+            rule()
+        ];
+
+        sorted.forEach(p => {
+            bodyChildren.push(personHeading(this.fullName(p)));
+            bodyChildren.push(factTable([
+                factRow('Gender', genderLabel(p.gender)),
+                factRow('Birth Date', p.birthDate),
+                factRow('Death Date', p.deathDate),
+                factRow('Birth Place', p.birthPlace),
+                factRow('Parents', nameList(p.parentIds)),
+                factRow('Spouse(s)', nameList(p.spouseIds)),
+                factRow('Children', nameList(childrenOf(p.id))),
+                factRow('Notes', p.notes)
+            ]));
+        });
+
+        return new docxLib.Document({
+            sections: [{
+                properties: { page: { size: { width: 12240, height: 15840 } } }, // US Letter
+                children: bodyChildren
+            }]
+        });
+    }
+
+    async exportReportWord() {
+        if (!this.people.length) { alert('Your tree is empty — add some people first.'); return; }
+        if (!window.docxLib) {
+            alert('Word export needs an internet connection the first time, to load the document library. Please check your connection and try again.');
+            return;
+        }
+        const btn = document.getElementById('exportWordBtn');
+        const originalText = btn.textContent;
+        btn.textContent = '⏳ Building…';
+        btn.disabled = true;
+        try {
+            const doc = this.buildWordReportDoc(window.docxLib);
+            const blob = await window.docxLib.Packer.toBlob(doc);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `family-history-report-${new Date().toISOString().slice(0, 10)}.docx`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error(err);
+            alert('Something went wrong building the Word document. See console for details.');
+        } finally {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+    }
+
     // ── Excel export: flat data table of everyone in the tree ──
     exportDataExcel() {
         if (!this.people.length) { alert('Your tree is empty — add some people first.'); return; }
@@ -939,6 +1058,7 @@ class FamilyTreeApp {
         document.getElementById('treeSearch').addEventListener('input', (e) => this.runTreeSearch(e.target.value.trim()));
 
         document.getElementById('exportPdfBtn').addEventListener('click', () => this.exportTreePdf());
+        document.getElementById('exportWordBtn').addEventListener('click', () => this.exportReportWord());
         document.getElementById('exportExcelBtn').addEventListener('click', () => this.exportDataExcel());
     }
 
