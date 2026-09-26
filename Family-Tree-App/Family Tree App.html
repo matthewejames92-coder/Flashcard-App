@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Family Tree</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/svg2pdf.js/2.2.3/svg2pdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     :root {
@@ -189,6 +192,8 @@
                 <select id="focusSelector" style="max-width:260px;"></select>
                 <input type="text" id="treeSearch" placeholder="Search people…">
                 <div class="spacer"></div>
+                <button class="btn btn-secondary btn-small" id="exportPdfBtn">📄 Export Chart (PDF)</button>
+                <button class="btn btn-secondary btn-small" id="exportExcelBtn">📊 Export Data (Excel)</button>
                 <div class="zoom-controls">
                     <button id="zoomOut" title="Zoom out">−</button>
                     <button id="zoomReset" title="Reset view">⟳</button>
@@ -722,6 +727,166 @@ class FamilyTreeApp {
         this.applyTransform();
     }
 
+    // ── PDF export: pure vector SVG chart, not a screenshot ────
+    genderHex(p) {
+        return p.gender === 'M' ? '4a6fa5' : p.gender === 'F' ? 'b5568c' : '8a8578';
+    }
+
+    initials(p) {
+        const a = (p.firstName || '?')[0] || '?';
+        const b = (p.lastName || '')[0] || '';
+        return (a + b).toUpperCase();
+    }
+
+    escapeXml(s) {
+        return String(s ?? '').replace(/[<>&"']/g, c => ({ '<':'&lt;', '>':'&gt;', '&':'&amp;', '"':'&quot;', "'":'&apos;' }[c]));
+    }
+
+    buildExportSVG(focusId) {
+        const { gens, pos } = this.layoutTree(focusId);
+        const CARD_W = 168, CARD_H = 78;
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        pos.forEach((x, id) => {
+            const y = gens.get(id) * this.SPACING_Y;
+            minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+            minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+        });
+        const padX = CARD_W, padTop = CARD_H + 90, padBottom = CARD_H + 30;
+        const offsetX = -minX + padX;
+        const offsetY = -minY + padTop;
+        const width = (maxX - minX) + padX * 2 + CARD_W;
+        const height = (maxY - minY) + padTop + padBottom + CARD_H;
+
+        let connectors = '';
+        pos.forEach((x, id) => {
+            const p = this.getPerson(id);
+            const y = gens.get(id) * this.SPACING_Y + offsetY;
+            const cx = x + offsetX + CARD_W / 2;
+            p.parentIds.forEach(pid => {
+                if (!pos.has(pid)) return;
+                const px = pos.get(pid) + offsetX + CARD_W / 2;
+                const py = gens.get(pid) * this.SPACING_Y + offsetY + CARD_H;
+                const midY = py + (y - py) / 2;
+                connectors += `<path d="M ${px} ${py} V ${midY} H ${cx} V ${y}" fill="none" stroke="#b5a179" stroke-width="2"/>`;
+            });
+            p.spouseIds.forEach(sid => {
+                if (!pos.has(sid) || id > sid) return;
+                const sx = pos.get(sid) + offsetX + CARD_W / 2;
+                const sy = gens.get(sid) * this.SPACING_Y + offsetY + CARD_H / 2;
+                connectors += `<line x1="${cx}" y1="${y + CARD_H / 2}" x2="${sx}" y2="${sy}" stroke="#b5568c" stroke-width="2" stroke-dasharray="4,3"/>`;
+            });
+        });
+
+        let nodes = '';
+        pos.forEach((x, id) => {
+            const p = this.getPerson(id);
+            const nx = x + offsetX, ny = gens.get(id) * this.SPACING_Y + offsetY;
+            const hex = this.genderHex(p);
+            const isFocus = id === focusId;
+            const photoEl = p.photo
+                ? `<clipPath id="clip-${id}"><circle cx="${nx+30}" cy="${ny+CARD_H/2}" r="20"/></clipPath>
+                   <image href="${p.photo}" x="${nx+10}" y="${ny+CARD_H/2-20}" width="40" height="40" clip-path="url(#clip-${id})" preserveAspectRatio="xMidYMid slice"/>`
+                : `<circle cx="${nx+30}" cy="${ny+CARD_H/2}" r="20" fill="#${hex}"/>
+                   <text x="${nx+30}" y="${ny+CARD_H/2+6}" font-family="Georgia, serif" font-size="15" font-weight="700" fill="#fff8ea" text-anchor="middle">${this.escapeXml(this.initials(p))}</text>`;
+            nodes += `
+                <g>
+                    <rect x="${nx}" y="${ny}" width="${CARD_W}" height="${CARD_H}" rx="9"
+                        fill="#fffaf3" stroke="${isFocus ? '#b8860b' : '#d8c496'}" stroke-width="${isFocus ? 3 : 2}"/>
+                    <rect x="${nx}" y="${ny}" width="6" height="${CARD_H}" rx="2" fill="#${hex}"/>
+                    ${photoEl}
+                    <text x="${nx+58}" y="${ny+34}" font-family="Georgia, serif" font-size="14" font-weight="700" fill="#3b2a1a">${this.escapeXml(this.fullName(p))}</text>
+                    <text x="${nx+58}" y="${ny+52}" font-family="Georgia, serif" font-size="11" fill="#7a6a4d">${this.escapeXml(this.dateRange(p))}</text>
+                </g>`;
+        });
+
+        const title = `Family Tree — centered on ${this.escapeXml(this.fullName(this.getPerson(focusId)))}`;
+        const subtitle = `Exported ${new Date().toLocaleDateString()}`;
+
+        const svgNS = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(svgNS, 'svg');
+        svg.setAttribute('xmlns', svgNS);
+        svg.setAttribute('width', width);
+        svg.setAttribute('height', height);
+        svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+        svg.innerHTML = `
+            <rect x="0" y="0" width="${width}" height="${height}" fill="#fbf4e3"/>
+            <text x="${width/2}" y="40" font-family="Georgia, serif" font-size="22" font-weight="700" fill="#6b4226" text-anchor="middle">${this.escapeXml(title)}</text>
+            <text x="${width/2}" y="62" font-family="Georgia, serif" font-size="12" font-style="italic" fill="#8a7a5d" text-anchor="middle">${this.escapeXml(subtitle)}</text>
+            ${connectors}
+            ${nodes}
+        `;
+        return { svg, width, height };
+    }
+
+    async exportTreePdf() {
+        if (!this.people.length) { alert('Your tree is empty — add some people first.'); return; }
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+            alert('PDF export needs an internet connection the first time, to load the PDF library. Please check your connection and try again.');
+            return;
+        }
+        const btn = document.getElementById('exportPdfBtn');
+        const originalText = btn.textContent;
+        btn.textContent = '⏳ Building…';
+        btn.disabled = true;
+        try {
+            const { svg, width, height } = this.buildExportSVG(this.focusId);
+            svg.style.position = 'fixed';
+            svg.style.left = '-99999px';
+            document.body.appendChild(svg);
+
+            const PX_TO_PT = 0.75;
+            const ptW = width * PX_TO_PT, ptH = height * PX_TO_PT;
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: ptW > ptH ? 'landscape' : 'portrait',
+                unit: 'pt',
+                format: [ptW, ptH]
+            });
+            await pdf.svg(svg, { x: 0, y: 0, width: ptW, height: ptH });
+            const name = this.fullName(this.getPerson(this.focusId)).replace(/[^a-z0-9]+/gi, '-');
+            pdf.save(`family-tree-${name}-${new Date().toISOString().slice(0, 10)}.pdf`);
+
+            document.body.removeChild(svg);
+        } catch (err) {
+            console.error(err);
+            alert('Something went wrong building the PDF. See console for details.');
+        } finally {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    // ── Excel export: flat data table of everyone in the tree ──
+    exportDataExcel() {
+        if (!this.people.length) { alert('Your tree is empty — add some people first.'); return; }
+        if (!window.XLSX) {
+            alert('Excel export needs an internet connection the first time, to load the spreadsheet library. Please check your connection and try again.');
+            return;
+        }
+        const nameList = ids => ids.map(id => this.fullName(this.getPerson(id))).filter(Boolean).join('; ');
+        const rows = [[
+            'First Name', 'Middle Name', 'Last Name', 'Gender', 'Birth Date', 'Death Date',
+            'Birth Place', 'Parents', 'Spouse(s)', 'Children', 'Notes'
+        ]];
+        this.people.slice()
+            .sort((a, b) => this.fullName(a).localeCompare(this.fullName(b)))
+            .forEach(p => {
+                const children = this.people.filter(pp => pp.parentIds.includes(p.id)).map(pp => pp.id);
+                rows.push([
+                    p.firstName || '', p.middleName || '', p.lastName || '',
+                    p.gender === 'M' ? 'Male' : p.gender === 'F' ? 'Female' : 'Unknown',
+                    p.birthDate || '', p.deathDate || '', p.birthPlace || '',
+                    nameList(p.parentIds), nameList(p.spouseIds), nameList(children),
+                    p.notes || ''
+                ]);
+            });
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        ws['!cols'] = [12, 12, 12, 9, 11, 11, 18, 26, 26, 26, 30].map(w => ({ wch: w }));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Family Tree');
+        XLSX.writeFile(wb, `family-tree-data-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    }
+
     // ── Pan & zoom ────────────────────────────────────────────
     setupTreeControls() {
         const viewport = document.getElementById('treeViewport');
@@ -772,6 +937,9 @@ class FamilyTreeApp {
         });
 
         document.getElementById('treeSearch').addEventListener('input', (e) => this.runTreeSearch(e.target.value.trim()));
+
+        document.getElementById('exportPdfBtn').addEventListener('click', () => this.exportTreePdf());
+        document.getElementById('exportExcelBtn').addEventListener('click', () => this.exportDataExcel());
     }
 
     applyTransform() {
